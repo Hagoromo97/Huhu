@@ -223,9 +223,9 @@ html {
    * Fluid device-aware font-size:
    *   --text-size-base  → user's chosen size (set by useTheme, default 16px)
    *   --app-font-scale  → device multiplier  (set by DeviceProvider)
-   *      mobile  < 768px  → 0.875  (~87.5% of user pref)
-   *      tablet  768-1024 → 0.9375 (~93.75%)
-   *      desktop > 1024px → 1.0    (100%)
+  *      mobile  < 768px  → 0.86   (~86% of user pref)
+  *      tablet  768-1024 → 0.925  (~92.5%)
+  *      desktop > 1024px → 0.975  (~97.5%)
    *
    * clamp() ensures font never goes below 13px or above --text-size-base.
    */

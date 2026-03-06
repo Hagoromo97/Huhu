@@ -13,7 +13,7 @@ const FoodTracker = lazy(() => import("@/components/FoodTracker").then(m => ({ d
 import { EditModeProvider } from "@/contexts/EditModeContext"
 import { DeviceProvider } from "@/contexts/DeviceContext"
 import { Toaster } from "sonner"
-import { Home, Package, Settings2, Calendar as CalendarIcon, Images, ChevronDown, Truck, Pin, LayoutList, List, MapPin, ClipboardList, Users } from "lucide-react"
+import { Home, Package, Settings2, Calendar as CalendarIcon, Images, ChevronDown, Truck, Pin, LayoutList, List, MapPin, ClipboardList, Users, CalendarDays, Clock } from "lucide-react"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -108,7 +108,7 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
   }, [])
 
   return (
-    <div className="flex flex-1 flex-col gap-5 p-3.5 sm:p-4 md:gap-6 md:p-8 max-w-3xl mx-auto w-full overflow-y-auto" style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}>
+    <div className="flex flex-1 flex-col gap-6 p-3.5 sm:p-4 md:gap-7 md:p-8 max-w-3xl mx-auto w-full overflow-y-auto" style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}>
       {/* Welcome */}
       <div className="pt-1 text-center">
         <h1 className="text-[clamp(0.9375rem,3vw,1.125rem)] font-bold text-foreground">Welcome to FCalendar</h1>
@@ -116,9 +116,9 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
       </div>
 
       {/* Quick Access */}
-      <div>
-        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-0.5 sm:mb-2.5">Quick Access</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
+      <div className="space-y-2.5 sm:space-y-3">
+        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-0.5">Quick Access</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3.5">
           <QuickActionCard icon={CalendarIcon} label="Calendar" description="View monthly schedule" page="calendar" gradient="bg-gradient-to-br from-blue-500 to-blue-600" onNavigate={onNavigate} />
           <QuickActionCard icon={ClipboardList} label="Route List" description="Manage vending routes" page="route-list" gradient="bg-gradient-to-br from-violet-500 to-violet-600" onNavigate={onNavigate} />
           <QuickActionCard icon={MapPin} label="Location" description="Delivery records" page="deliveries" gradient="bg-gradient-to-br from-emerald-500 to-emerald-600" onNavigate={onNavigate} />
@@ -126,6 +126,8 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
           <QuickActionCard icon={Images} label="Album" description="View all VM photos" page="gallery-album" gradient="bg-gradient-to-br from-fuchsia-500 to-fuchsia-600" onNavigate={onNavigate} />
         </div>
       </div>
+
+      <div className="mx-0.5 h-px bg-gradient-to-r from-transparent via-border/65 to-transparent" />
 
       {/* Pinned Routes */}
       {pinnedRoutes.length > 0 && (
@@ -177,6 +179,11 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
       )}
 
       {/* Color Guide Table */}
+      <div className="space-y-2.5">
+        <div className="flex items-center gap-3 px-0.5">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Daily Color</p>
+          <div className="h-px flex-1 bg-border/50" />
+        </div>
       <div className="rounded-2xl border border-border overflow-hidden shadow-sm">
         {/* Collapsible header */}
         <button
@@ -202,10 +209,7 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
           >
             <div className="flex items-center gap-2">
               {isToday && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
-              <div>
-                <p className={`text-sm font-semibold ${isToday ? "text-foreground" : "text-foreground"}`}>{day}</p>
-                {isToday && <p className="text-xs text-muted-foreground">Today</p>}
-              </div>
+              <p className={`text-sm font-semibold ${isToday ? "text-foreground" : "text-foreground"}`}>{day}</p>
             </div>
             <div className="flex justify-center">
               <ColorDot color={STOCK_IN_COLORS[i]} />
@@ -228,6 +232,7 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
             {tableExpanded ? "Show less" : "Show all days"}
           </button>
         )}
+      </div>
       </div>
 
       {/* Legend */}
@@ -265,6 +270,7 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
 function AppContent() {
   const [currentPage, setCurrentPage] = useState("home")
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [roosterViewMode, setRoosterViewMode] = useState<"week" | "day">("week")
   const { open, setOpen, openMobile, setOpenMobile, isMobile, toggleSidebar } = useSidebar()
 
   const handlePageChange = (page: string) => {
@@ -305,7 +311,7 @@ function AppContent() {
       case "calendar":
         return <Calendar view="month" />
       case "rooster":
-        return <Rooster />
+        return <Rooster viewMode={roosterViewMode} />
       case "food-tracker":
         return <FoodTracker />
       case "settings":
@@ -439,6 +445,28 @@ function AppContent() {
               })()}
             </BreadcrumbList>
           </Breadcrumb>
+
+          {currentPage === "rooster" && (
+            <div className="flex items-center gap-1 rounded-lg border border-border/60 overflow-hidden bg-muted/30 p-1 shrink-0">
+              {(["week", "day"] as const).map((view) => (
+                <button
+                  key={view}
+                  onClick={() => setRoosterViewMode(view)}
+                  className={`h-8 px-3 text-xs font-semibold rounded-md capitalize transition-all ${
+                    roosterViewMode === view
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {view === "week" ? (
+                    <><CalendarDays className="size-3 inline mr-1" />Week</>
+                  ) : (
+                    <><Clock className="size-3 inline mr-1" />Day</>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Calendar view cycle button — single multi-state button */}
           {["calendar","calendar-month","calendar-week","calendar-day","calendar-list"].includes(currentPage) && (() => {

@@ -7,7 +7,6 @@ import {
   Search,
   X,
   Images,
-  Utensils,
 } from "lucide-react"
 import { useTheme } from "@/hooks/use-theme"
 import { useEditMode } from "@/contexts/EditModeContext"
@@ -48,14 +47,14 @@ const data = {
       isActive: false,
       items: [
         {
-          title: "Calendar",
-          url: "#",
-          page: "calendar-month",
-        },
-        {
           title: "Rooster",
           url: "#",
           page: "rooster",
+        },
+        {
+          title: "Food Tracker",
+          url: "#",
+          page: "food-tracker",
         },
       ],
     },
@@ -94,13 +93,6 @@ const data = {
           page: "gallery-album",
         },
       ],
-    },
-    {
-      title: "Food Tracker",
-      url: "#",
-      icon: Utensils,
-      page: "food-tracker",
-      isActive: false,
     },
   ],
   settingsItems: [
@@ -179,16 +171,17 @@ export function AppSidebar({
   return (
     <>
     <Sidebar {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="border-b border-sidebar-border/60">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton 
               size="lg" 
               asChild
+              className="rounded-xl"
               onClick={() => onNavigate?.("home")}
             >
               <a href="#">
-                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-9 items-center justify-center rounded-xl shadow-sm">
                   <Calendar className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
@@ -200,14 +193,14 @@ export function AppSidebar({
           </SidebarMenuItem>
         </SidebarMenu>
         {/* Search field */}
-        <div className="relative mt-1 sidebar-search-wrapper">
+        <div className="relative sidebar-search-wrapper">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none transition-colors" />
           <input
             type="text"
             placeholder="Search..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="sidebar-search h-8 w-full rounded-md border border-input bg-background pl-8 pr-7 text-sm shadow-none outline-none ring-0 transition-all duration-200 placeholder:text-muted-foreground/60 focus:ring-1 focus:ring-ring"
+            className="sidebar-search h-9 w-full rounded-lg border border-input bg-background/90 pl-8 pr-7 text-sm shadow-none outline-none ring-0 transition-all duration-200 placeholder:text-muted-foreground/60 focus:ring-1 focus:ring-ring"
           />
           {searchQuery && (
             <button
@@ -241,7 +234,7 @@ export function AppSidebar({
           searchQuery={searchQuery}
         />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-sidebar-border/60">
         <NavUser user={data.user} onNavigate={onNavigate} />
       </SidebarFooter>
     </Sidebar>

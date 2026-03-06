@@ -7,7 +7,7 @@ interface DeviceContextValue {
   isTablet: boolean
   isDesktop: boolean
   isTouch: boolean
-  /** CSS-friendly font scale factor — 0.875 on mobile, 0.9375 on tablet, 1 on desktop */
+  /** CSS-friendly font scale factor — 0.86 on mobile, 0.925 on tablet, 0.975 on desktop */
   fontScale: number
 }
 
@@ -38,7 +38,8 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
     () => typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0),
     []
   )
-  const fontScale = isMobile ? 0.875 : isTablet ? 0.9375 : 1
+  // Slight global downscale to keep the app a bit more compact.
+  const fontScale = isMobile ? 0.86 : isTablet ? 0.925 : 0.975
 
   // Sync HTML data-attributes whenever device changes
   React.useEffect(() => {

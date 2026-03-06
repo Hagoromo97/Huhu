@@ -111,7 +111,7 @@ export function NavProjects({
                   {showModeToggle && (
                     <SidebarMenuSubItem>
                       <div className="mt-1 flex items-center justify-between rounded-md px-2 py-1.5 border-t border-border/40">
-                        <span className="text-sm text-foreground">Dark Mode</span>
+                        <span className="text-sm font-medium text-foreground">Dark Mode</span>
                         <Switch
                           size="sm"
                           checked={isDarkMode}
@@ -123,7 +123,7 @@ export function NavProjects({
                   {showEditToggle && (
                     <SidebarMenuSubItem>
                       <div className="flex items-center justify-between rounded-md px-2 py-1.5">
-                        <span className="text-sm text-foreground">Edit Mode</span>
+                        <span className="text-sm font-medium text-foreground">Edit Mode</span>
                         <Switch
                           size="sm"
                           checked={isEditMode}
