@@ -213,6 +213,11 @@ function buildRouteEventTitle(routeName: string, style: "AM" | "PM") {
   return `${normalizeRouteLabel(routeName)} - ${style}`
 }
 
+function buildRouteTitleFromOption(route?: RouteCardOption) {
+  if (!route) return ""
+  return buildRouteEventTitle(route.name, normalizeStyle(route.shift))
+}
+
 // ─── SEED DATA ────────────────────────────────────────────────────────────────
 
 const SEED_RESOURCES: Resource[] = [
@@ -270,7 +275,6 @@ export function Rooster({
   const [shifts, setShifts] = useState<Shift[]>([])
   const [routeCards, setRouteCards] = useState<RouteCardOption[]>([])
   const [selectedRouteId, setSelectedRouteId] = useState("")
-  const [eventStyle, setEventStyle] = useState<"AM" | "PM">("AM")
   const [loading, setLoading] = useState(true)
 
   // Dialogs
@@ -406,7 +410,7 @@ export function Rooster({
     const inferredStyle = firstRoute ? normalizeStyle(firstRoute.shift) : "AM"
     const styleDefaults = getStyleDefaults(inferredStyle)
     setShiftForm({
-      title: firstRoute ? buildRouteEventTitle(firstRoute.name, inferredStyle) : "",
+      title: buildRouteTitleFromOption(firstRoute),
       resourceId: resourceId ?? resources[0]?.id ?? "",
       date: date ?? toDateKey(currentDate),
       startHour: styleDefaults.startHour,
@@ -414,7 +418,6 @@ export function Rooster({
       color: styleDefaults.color,
     })
     setSelectedRouteId(firstRoute?.id ?? "")
-    setEventStyle(inferredStyle)
     setShiftDialog({ open: true, mode: "add" })
   }
 
@@ -438,8 +441,9 @@ export function Rooster({
         return
       }
 
-      const defaults = getStyleDefaults(eventStyle)
-      const title = buildRouteEventTitle(selectedRoute.name, eventStyle)
+      const autoStyle = normalizeStyle(selectedRoute.shift)
+      const defaults = getStyleDefaults(autoStyle)
+      const title = buildRouteEventTitle(selectedRoute.name, autoStyle)
       const newShift: Shift = {
         id: `s${Date.now()}`,
         ...shiftForm,
@@ -510,7 +514,7 @@ export function Rooster({
   }
 
   const selectedRoute = routeCards.find((r) => r.id === selectedRouteId)
-  const addEventPreview = selectedRoute ? buildRouteEventTitle(selectedRoute.name, eventStyle) : ""
+  const addEventPreview = buildRouteTitleFromOption(selectedRoute)
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -635,8 +639,8 @@ export function Rooster({
                             className={`flex items-center justify-center text-xs font-semibold border-r border-border/35 ${isToday ? "text-primary" : "text-muted-foreground"}`}
                             style={{ width: dayColWidth }}
                           >
-                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] ${isToday ? "bg-primary text-primary-foreground" : "bg-muted/60"}`}>
-                              {date.getDate()}
+                            <span className={`inline-flex items-center justify-center rounded-full px-2 h-5 text-[10px] sm:px-2.5 sm:h-6 sm:text-[11px] ${isToday ? "bg-primary text-primary-foreground" : "bg-muted/60"}`}>
+                              {date.getDate()} - {DAYS_SHORT[date.getDay()]}
                             </span>
                           </div>
                         )
@@ -723,16 +727,13 @@ export function Rooster({
                                   <button
                                     key={shift.id}
                                     onClick={(e) => { e.stopPropagation(); if (isEditMode) openEditShift(shift) }}
-                                    className={`w-full rounded-md border px-2 py-1 text-left text-[10px] leading-tight ${isEditMode ? "hover:brightness-95" : "cursor-default"}`}
-                                    style={{
-                                      backgroundColor: `${shift.color}18`,
-                                      borderColor: `${shift.color}66`,
-                                      color: shift.color,
-                                    }}
+                                    className={`w-full px-0 py-0.5 text-center text-[10px] leading-tight text-foreground ${isEditMode ? "hover:underline underline-offset-2" : "cursor-default"}`}
                                     title={`${shift.title}: ${formatHour(shift.startHour)} - ${formatHour(shift.endHour)}`}
                                   >
                                     <div className="font-semibold truncate">{shift.title}</div>
-                                    <div className="opacity-80 truncate">{shift.startHour}:00 - {shift.endHour}:00</div>
+                                    {isEditMode && (
+                                      <div className="opacity-70 truncate">{shift.startHour}:00 - {shift.endHour}:00</div>
+                                    )}
                                   </button>
                                 ))
                               )}
@@ -759,19 +760,18 @@ export function Rooster({
                           return (
                             <div
                               key={shift.id}
-                              className={`absolute top-3 h-8 rounded-md px-2.5 flex items-center justify-between gap-2 text-[11px] font-semibold shadow-sm border ${isEditMode ? "cursor-pointer hover:brightness-95" : ""}`}
+                              className={`absolute top-3 h-8 px-1.5 flex flex-col items-center justify-center text-[11px] font-semibold text-foreground ${isEditMode ? "cursor-pointer hover:underline underline-offset-2" : ""}`}
                               style={{
                                 left,
                                 width,
-                                backgroundColor: `${shift.color}18`,
-                                borderColor: `${shift.color}66`,
-                                color: shift.color,
                               }}
                               onClick={(e) => { e.stopPropagation(); if (isEditMode) openEditShift(shift) }}
                               title={`${shift.title}: ${formatHour(shift.startHour)} - ${formatHour(shift.endHour)}`}
                             >
-                              <span className="truncate">{shift.title}</span>
-                              <span className="shrink-0 opacity-80">{shift.startHour}:00</span>
+                              <span className="truncate text-center">{shift.title}</span>
+                              {isEditMode && (
+                                <span className="text-[10px] font-medium opacity-70 truncate">{shift.startHour}:00 - {shift.endHour}:00</span>
+                              )}
                             </div>
                           )
                         })}
@@ -828,7 +828,16 @@ export function Rooster({
                       const rid = e.target.value
                       setSelectedRouteId(rid)
                       const route = routeCards.find((r) => r.id === rid)
-                      if (route) setEventStyle(normalizeStyle(route.shift))
+                      if (!route) return
+                      const autoStyle = normalizeStyle(route.shift)
+                      const defaults = getStyleDefaults(autoStyle)
+                      setShiftForm(p => ({
+                        ...p,
+                        title: buildRouteEventTitle(route.name, autoStyle),
+                        startHour: defaults.startHour,
+                        endHour: defaults.endHour,
+                        color: defaults.color,
+                      }))
                     }}
                     className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   >
@@ -839,19 +848,7 @@ export function Rooster({
                   </select>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Shift Style</label>
-                  <select
-                    value={eventStyle}
-                    onChange={e => setEventStyle(e.target.value as "AM" | "PM")}
-                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="AM">AM</option>
-                    <option value="PM">PM</option>
-                  </select>
-                </div>
-
-                <div className="rounded-md border border-border/60 bg-muted/20 px-3 py-2">
+                <div className="rounded-md border border-border/60 px-3 py-2">
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Preview</p>
                   <p className="text-sm font-semibold text-foreground mt-1">{addEventPreview || "Select route first"}</p>
                 </div>
