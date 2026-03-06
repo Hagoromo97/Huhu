@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react"
 
+const THEME_SYNC_EVENT = "fcalendar_theme_sync"
+
 export type ColorMode = "light" | "dark"
 export type ColorTheme =
   | "default"
@@ -81,6 +83,12 @@ export function useTheme() {
     }
     localStorage.setItem("color-mode", mode)
     localStorage.setItem("color-theme", colorTheme)
+
+    // Sync other useTheme hook instances in the same tab.
+    window.dispatchEvent(new CustomEvent(THEME_SYNC_EVENT, {
+      detail: { mode, colorTheme },
+    }))
+
     const color = mode === "dark" ? "#1a1a2e" : "#ffffff"
     const allMetas = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
     if (allMetas.length === 0) {
@@ -91,6 +99,19 @@ export function useTheme() {
     } else {
       allMetas.forEach((meta) => meta.setAttribute("content", color))
     }
+  }, [mode, colorTheme])
+
+  // Keep parallel useTheme instances in sync (e.g. sidebar + settings page).
+  useEffect(() => {
+    const syncFromEvent = (event: Event) => {
+      const detail = (event as CustomEvent<{ mode?: ColorMode; colorTheme?: ColorTheme }>).detail
+      if (!detail) return
+      if (detail.mode && detail.mode !== mode) setMode(detail.mode)
+      if (detail.colorTheme && detail.colorTheme !== colorTheme) setColorTheme(detail.colorTheme)
+    }
+
+    window.addEventListener(THEME_SYNC_EVENT, syncFromEvent)
+    return () => window.removeEventListener(THEME_SYNC_EVENT, syncFromEvent)
   }, [mode, colorTheme])
 
   // Font

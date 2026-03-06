@@ -9,10 +9,11 @@ const PlanoVM = lazy(() => import("@/components/PlanoVM").then(m => ({ default: 
 const DeliveryTableDialog = lazy(() => import("@/components/DeliveryTableDialog").then(m => ({ default: m.DeliveryTableDialog })))
 const Album = lazy(() => import("@/components/Album").then(m => ({ default: m.Album })))
 const Rooster = lazy(() => import("@/components/Rooster").then(m => ({ default: m.Rooster })))
+const FoodTracker = lazy(() => import("@/components/FoodTracker").then(m => ({ default: m.FoodTracker })))
 import { EditModeProvider } from "@/contexts/EditModeContext"
 import { DeviceProvider } from "@/contexts/DeviceContext"
 import { Toaster } from "sonner"
-import { Home, Package, Settings2, Calendar as CalendarIcon, Images, ChevronDown, Truck, Pin, LayoutList, List } from "lucide-react"
+import { Home, Package, Settings2, Calendar as CalendarIcon, Images, ChevronDown, Truck, Pin, LayoutList, List, MapPin, ClipboardList, Users } from "lucide-react"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -29,13 +30,13 @@ import {
 } from "@/components/ui/sidebar"
 
 const DAYS = [
-  { en: "Monday",    my: "Isnin"  },
-  { en: "Tuesday",   my: "Selasa" },
-  { en: "Wednesday", my: "Rabu"   },
-  { en: "Thursday",  my: "Khamis" },
-  { en: "Friday",    my: "Jumaat" },
-  { en: "Saturday",  my: "Sabtu"  },
-  { en: "Sunday",    my: "Ahad"   },
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
 ]
 
 const STOCK_IN_COLORS  = ["#3B82F6","#F97316","#92400E","#22C55E","#A855F7","#EC4899","#EAB308"]
@@ -48,6 +49,37 @@ function ColorDot({ color }: { color: string }) {
       className="inline-block w-4 h-4 rounded-full shrink-0 ring-1 ring-black/10 dark:ring-white/10"
       style={{ backgroundColor: color }}
     />
+  )
+}
+
+function QuickActionCard({
+  icon: Icon,
+  label,
+  description,
+  page,
+  gradient,
+  onNavigate,
+}: {
+  icon: React.ElementType
+  label: string
+  description: string
+  page: string
+  gradient: string
+  onNavigate: (page: string) => void
+}) {
+  return (
+    <button
+      onClick={() => onNavigate(page)}
+      className="group flex flex-col items-start gap-2 rounded-xl p-3 sm:gap-2.5 sm:p-3.5 text-left border border-border bg-card hover:bg-muted/40 hover:border-border/80 active:scale-[0.97] transition-all duration-150"
+    >
+      <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${gradient} shadow-sm shrink-0`}>
+        <Icon className="size-3.5 text-white" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-foreground tracking-tight leading-snug">{label}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{description}</p>
+      </div>
+    </button>
   )
 }
 
@@ -76,16 +108,28 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
   }, [])
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-3xl mx-auto w-full overflow-y-auto" style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}>
+    <div className="flex flex-1 flex-col gap-5 p-3.5 sm:p-4 md:gap-6 md:p-8 max-w-3xl mx-auto w-full overflow-y-auto" style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}>
       {/* Welcome */}
       <div className="pt-1 text-center">
-        <h1 className="text-[clamp(0.9375rem,3vw,1.125rem)] font-bold text-gray-900 dark:text-white">Welcome to FCalendar</h1>
-        <p className="text-fluid-sm page-subheader text-muted-foreground mt-1">Daily colour guide for stock operations.</p>
+        <h1 className="text-[clamp(0.9375rem,3vw,1.125rem)] font-bold text-foreground">Welcome to FCalendar</h1>
+        <p className="text-fluid-sm page-subheader text-muted-foreground mt-1">Daily color guide for stock operations.</p>
+      </div>
+
+      {/* Quick Access */}
+      <div>
+        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-0.5 sm:mb-2.5">Quick Access</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
+          <QuickActionCard icon={CalendarIcon} label="Calendar" description="View monthly schedule" page="calendar" gradient="bg-gradient-to-br from-blue-500 to-blue-600" onNavigate={onNavigate} />
+          <QuickActionCard icon={ClipboardList} label="Route List" description="Manage vending routes" page="route-list" gradient="bg-gradient-to-br from-violet-500 to-violet-600" onNavigate={onNavigate} />
+          <QuickActionCard icon={MapPin} label="Location" description="Delivery records" page="deliveries" gradient="bg-gradient-to-br from-emerald-500 to-emerald-600" onNavigate={onNavigate} />
+          <QuickActionCard icon={Users} label="Rooster" description="Team schedule" page="rooster" gradient="bg-gradient-to-br from-orange-500 to-orange-600" onNavigate={onNavigate} />
+          <QuickActionCard icon={Images} label="Album" description="View all VM photos" page="gallery-album" gradient="bg-gradient-to-br from-fuchsia-500 to-fuchsia-600" onNavigate={onNavigate} />
+        </div>
       </div>
 
       {/* Pinned Routes */}
       {pinnedRoutes.length > 0 && (
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-2 sm:gap-2.5">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             <Pin className="size-3" />
             Pinned Routes
@@ -95,7 +139,7 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
               const isKL  = (r.name + " " + r.code).toLowerCase().includes("kl")
               const isSel = (r.name + " " + r.code).toLowerCase().includes("sel")
               return (
-                <div key={r.id} className={`flex items-center gap-3 px-3 py-2.5 ${i !== 0 ? "border-t border-border/40" : ""}`}>
+                <div key={r.id} className={`flex items-center gap-2.5 px-2.5 py-2.5 sm:gap-3 sm:px-3 ${i !== 0 ? "border-t border-border/40" : ""}`}>
                   {/* Flag / icon */}
                   {isKL
                     ? <img src="/kl-flag.png" className="shrink-0 object-cover rounded shadow-sm ring-1 ring-black/10 dark:ring-white/10" style={{ width: 32, height: 20 }} alt="KL" />
@@ -136,7 +180,7 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
       <div className="rounded-2xl border border-border overflow-hidden shadow-sm">
         {/* Collapsible header */}
         <button
-          className="w-full grid grid-cols-4 bg-muted/60 text-xs font-semibold uppercase tracking-wide text-muted-foreground px-4 py-3 gap-2 hover:bg-muted/80 transition-colors text-left items-center"
+          className="w-full grid grid-cols-4 bg-muted/45 text-xs font-semibold uppercase tracking-wide text-foreground/85 px-3 py-2.5 gap-1.5 sm:px-4 sm:py-3 sm:gap-2 hover:bg-muted/60 transition-colors text-left items-center"
           onClick={() => setTableOpen(v => !v)}
         >
           <span className="flex items-center gap-1.5">
@@ -153,14 +197,14 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
           if (!isToday && !tableExpanded) return null
           return (
           <div
-            key={day.en}
-            className={`grid grid-cols-4 items-center px-4 py-3 gap-2 border-t border-border/60 transition-colors ${isToday ? "bg-primary/8 dark:bg-primary/10" : "hover:bg-muted/30"}`}
+            key={day}
+            className={`grid grid-cols-4 items-center px-3 py-2.5 gap-1.5 sm:px-4 sm:py-3 sm:gap-2 border-t border-border/60 transition-colors ${isToday ? "bg-primary/[0.06] hover:bg-primary/[0.09]" : "hover:bg-muted/20"}`}
           >
             <div className="flex items-center gap-2">
               {isToday && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
               <div>
-                <p className={`text-sm font-semibold ${isToday ? "text-primary" : "text-foreground"}`}>{day.my}</p>
-                <p className="text-xs text-muted-foreground">{day.en}</p>
+                <p className={`text-sm font-semibold ${isToday ? "text-foreground" : "text-foreground"}`}>{day}</p>
+                {isToday && <p className="text-xs text-muted-foreground">Today</p>}
               </div>
             </div>
             <div className="flex justify-center">
@@ -189,22 +233,22 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
       {/* Legend */}
       <div className="rounded-2xl border border-border overflow-hidden shadow-sm">
         <button
-          className="w-full flex items-center gap-1.5 bg-muted/60 text-xs font-semibold uppercase tracking-wide text-muted-foreground px-4 py-3 hover:bg-muted/80 transition-colors text-left"
+          className="w-full flex items-center gap-1.5 bg-muted/60 text-xs font-semibold uppercase tracking-wide text-muted-foreground px-3 py-2.5 sm:px-4 sm:py-3 hover:bg-muted/80 transition-colors text-left"
           onClick={() => setLegendOpen(v => !v)}
         >
           <ChevronDown className={`size-3.5 shrink-0 transition-transform duration-200 ${legendOpen ? "rotate-180" : ""}`} />
-          Colour Legend
+          Color Legend
         </button>
         {legendOpen && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 p-4 border-t border-border/60">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 p-3.5 sm:p-4 border-t border-border/60">
             {[
-              { color: "#3B82F6", label: "Blue / Biru" },
+              { color: "#3B82F6", label: "Blue" },
               { color: "#F97316", label: "Orange" },
-              { color: "#92400E", label: "Brown / Coklat" },
-              { color: "#22C55E", label: "Green / Hijau" },
-              { color: "#A855F7", label: "Purple / Ungu" },
+              { color: "#92400E", label: "Brown" },
+              { color: "#22C55E", label: "Green" },
+              { color: "#A855F7", label: "Purple" },
               { color: "#EC4899", label: "Pink" },
-              { color: "#EAB308", label: "Yellow / Kuning" },
+              { color: "#EAB308", label: "Yellow" },
             ].map(({ color, label }) => (
               <div key={label} className="flex items-center gap-2 text-sm text-muted-foreground">
                 <ColorDot color={color} />
@@ -221,9 +265,13 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
 function AppContent() {
   const [currentPage, setCurrentPage] = useState("home")
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const { open, openMobile, isMobile, toggleSidebar } = useSidebar()
+  const { open, setOpen, openMobile, setOpenMobile, isMobile, toggleSidebar } = useSidebar()
 
   const handlePageChange = (page: string) => {
+    // Always close sidebar after selecting a destination.
+    if (isMobile) setOpenMobile(false)
+    else setOpen(false)
+
     if (page === currentPage) return
     setIsTransitioning(true)
     setTimeout(() => {
@@ -240,7 +288,7 @@ function AppContent() {
         return (
           <div className="flex flex-col flex-1 min-h-0 gap-4 p-4 md:p-6">
             <div className="shrink-0">
-              <h1 className="text-fluid-xl page-header font-bold text-gray-900 dark:text-white">Location</h1>
+              <h1 className="text-fluid-xl page-header font-bold text-foreground">Location</h1>
               <p className="text-fluid-sm page-subheader text-muted-foreground mt-1">View and manage delivery records.</p>
             </div>
             <DeliveryTableDialog />
@@ -258,9 +306,15 @@ function AppContent() {
         return <Calendar view="month" />
       case "rooster":
         return <Rooster />
+      case "food-tracker":
+        return <FoodTracker />
       case "settings":
       case "settings-profile":
         return <Settings section="profile" />
+      case "settings-mode":
+        return <Settings section="mode" />
+      case "settings-edit-mode":
+        return <Settings section="edit-mode" />
       case "settings-notifications":
         return <Settings section="notifications" />
       case "settings-appearance":
@@ -299,9 +353,15 @@ function AppContent() {
         return { parent: { label: "Calendar", icon: CalendarIcon }, current: "Month View" }
       case "rooster":
         return { parent: { label: "Calendar", icon: CalendarIcon }, current: "Rooster" }
+      case "food-tracker":
+        return { parent: { label: "Food Tracker", icon: Package }, current: "Tracker" }
       case "settings":
       case "settings-profile":
         return { parent: { label: "Settings", icon: Settings2 }, current: "Profile" }
+      case "settings-mode":
+        return { parent: { label: "Settings", icon: Settings2 }, current: "Mode" }
+      case "settings-edit-mode":
+        return { parent: { label: "Settings", icon: Settings2 }, current: "Edit Mode" }
       case "settings-notifications":
         return { parent: { label: "Settings", icon: Settings2 }, current: "Notifications" }
       case "settings-appearance":

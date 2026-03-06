@@ -1,6 +1,7 @@
 "use client"
 
-import { ChevronRight, Pencil, Settings2 } from "lucide-react"
+import { ChevronRight, Settings2 } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
 import {
   Collapsible,
   CollapsibleContent,
@@ -29,6 +30,8 @@ export function NavProjects({
   onSettingsOpenChange,
   currentPage,
   onNavigate,
+  isDarkMode,
+  onDarkModeToggle,
   isEditMode,
   onEditModeToggle,
   searchQuery = "",
@@ -38,8 +41,10 @@ export function NavProjects({
   onSettingsOpenChange: (open: boolean) => void
   currentPage?: string
   onNavigate?: (page: string) => void
+  isDarkMode: boolean
+  onDarkModeToggle: (checked: boolean) => void
   isEditMode: boolean
-  onEditModeToggle: () => void
+  onEditModeToggle: (checked: boolean) => void
   searchQuery?: string
 }) {
   const isSearching = searchQuery.trim().length > 0
@@ -53,10 +58,11 @@ export function NavProjects({
     ? true
     : ("settings".includes(q) || filteredSettings.length > 0)
 
-  const showEditMode = !isSearching || "edit mode".includes(q) || "edit".includes(q)
+  const showModeToggle = !isSearching || ["mode", "dark", "light"].some(k => k.includes(q) || q.includes(k))
+  const showEditToggle = !isSearching || ["edit", "edit mode"].some(k => k.includes(q) || q.includes(k))
 
   // Hide the whole section if search matches nothing in Projects
-  if (isSearching && !showSettings && !showEditMode) return null
+  if (isSearching && !showSettings && !showModeToggle && !showEditToggle) return null
 
   return (
     <SidebarGroup>
@@ -102,32 +108,36 @@ export function NavProjects({
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   ))}
+                  {showModeToggle && (
+                    <SidebarMenuSubItem>
+                      <div className="mt-1 flex items-center justify-between rounded-md px-2 py-1.5 border-t border-border/40">
+                        <span className="text-sm text-foreground">Dark Mode</span>
+                        <Switch
+                          size="sm"
+                          checked={isDarkMode}
+                          onCheckedChange={onDarkModeToggle}
+                        />
+                      </div>
+                    </SidebarMenuSubItem>
+                  )}
+                  {showEditToggle && (
+                    <SidebarMenuSubItem>
+                      <div className="flex items-center justify-between rounded-md px-2 py-1.5">
+                        <span className="text-sm text-foreground">Edit Mode</span>
+                        <Switch
+                          size="sm"
+                          checked={isEditMode}
+                          onCheckedChange={onEditModeToggle}
+                        />
+                      </div>
+                    </SidebarMenuSubItem>
+                  )}
                 </SidebarMenuSub>
               </CollapsibleContent>
             </SidebarMenuItem>
           </Collapsible>
         )}
 
-        {/* Edit Mode */}
-        {showEditMode && (
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              tooltip="Edit Mode"
-              onClick={onEditModeToggle}
-              className={`transition-colors duration-150 ${
-                isEditMode ? "text-primary font-medium bg-primary/10 hover:bg-primary/15" : ""
-              }`}
-            >
-              <Pencil />
-              <span>Edit Mode</span>
-              <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${
-                isEditMode ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-              }`}>
-                {isEditMode ? "ON" : "OFF"}
-              </span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        )}
       </SidebarMenu>
     </SidebarGroup>
   )

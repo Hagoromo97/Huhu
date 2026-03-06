@@ -7,7 +7,9 @@ import {
   Search,
   X,
   Images,
+  Utensils,
 } from "lucide-react"
+import { useTheme } from "@/hooks/use-theme"
 import { useEditMode } from "@/contexts/EditModeContext"
 import {
   Dialog,
@@ -93,13 +95,18 @@ const data = {
         },
       ],
     },
+    {
+      title: "Food Tracker",
+      url: "#",
+      icon: Utensils,
+      page: "food-tracker",
+      isActive: false,
+    },
   ],
   settingsItems: [
     { title: "Profile",     page: "settings-profile" },
     { title: "Appearance",  page: "settings-appearance" },
     { title: "Font",        page: "settings-appearance-font" },
-    { title: "Display",     page: "settings-appearance-display" },
-    { title: "Security",    page: "settings-security" },
   ],
 }
 
@@ -121,6 +128,7 @@ export function AppSidebar({
   const [settingsOpen, setSettingsOpen] = React.useState(() => SETTINGS_PAGES.has(currentPage ?? ""))
   const [openNavItem, setOpenNavItem] = React.useState<string | null>(null)
   const [unsavedDialogOpen, setUnsavedDialogOpen] = React.useState(false)
+  const { mode, setMode } = useTheme()
   const { isEditMode, setIsEditMode, hasUnsavedChanges, saveChanges, isSaving, discardChanges } = useEditMode()
 
   // Mutually exclusive: opening a Platform submenu closes Settings, and vice versa
@@ -132,14 +140,6 @@ export function AppSidebar({
   const handleSettingsOpenChange = (open: boolean) => {
     setSettingsOpen(open)
     if (open) setOpenNavItem(null)
-  }
-
-  const handleEditModeToggle = () => {
-    if (isEditMode && hasUnsavedChanges) {
-      setUnsavedDialogOpen(true)
-    } else {
-      setIsEditMode(!isEditMode)
-    }
   }
 
   const filteredNavMain = React.useMemo(() => {
@@ -162,6 +162,18 @@ export function AppSidebar({
 
   const handleSubItemClick = (page: string) => {
     onNavigate?.(page)
+  }
+
+  const handleEditModeToggle = (checked: boolean) => {
+    if (checked) {
+      setIsEditMode(true)
+      return
+    }
+    if (hasUnsavedChanges) {
+      setUnsavedDialogOpen(true)
+      return
+    }
+    setIsEditMode(false)
   }
 
   return (
@@ -222,6 +234,8 @@ export function AppSidebar({
           onSettingsOpenChange={handleSettingsOpenChange}
           currentPage={currentPage}
           onNavigate={onNavigate}
+          isDarkMode={mode === "dark"}
+          onDarkModeToggle={(checked) => setMode(checked ? "dark" : "light")}
           isEditMode={isEditMode}
           onEditModeToggle={handleEditModeToggle}
           searchQuery={searchQuery}
@@ -231,8 +245,6 @@ export function AppSidebar({
         <NavUser user={data.user} onNavigate={onNavigate} />
       </SidebarFooter>
     </Sidebar>
-
-      {/* Unsaved Changes Dialog */}
       <Dialog open={unsavedDialogOpen} onOpenChange={setUnsavedDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -260,7 +272,7 @@ export function AppSidebar({
               }}
               disabled={isSaving}
             >
-              {isSaving ? 'Saving...' : 'Save & Turn Off'}
+              {isSaving ? "Saving..." : "Save & Turn Off"}
             </Button>
           </DialogFooter>
         </DialogContent>

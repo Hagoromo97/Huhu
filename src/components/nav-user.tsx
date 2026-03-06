@@ -1,6 +1,7 @@
 import {
   Bell,
   ChevronsUpDown,
+  Shield,
   LogOut,
 } from "lucide-react"
 
@@ -78,6 +79,10 @@ export function NavUser({
               <DropdownMenuItem onClick={() => onNavigate?.("settings-notifications")}>
                 <Bell />
                 Notifications
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onNavigate?.("settings-security")}>
+                <Shield />
+                Security
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

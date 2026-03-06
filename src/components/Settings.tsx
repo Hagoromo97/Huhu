@@ -2,15 +2,25 @@ import { useState } from "react"
 import type { ReactNode } from "react"
 import {
   User, Bell, Lock, Globe, Mail, Phone, Save, Shield,
-  Eye, EyeOff, Moon, Sun, Check, Type, ZoomIn,
+  Eye, EyeOff, Sun, Check, Type, ZoomIn,
+  Pencil,
   Brush, AlertTriangle, Languages,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { useTheme, FONT_OPTIONS, type ColorTheme, type AppFont, type AppZoom, type TextSize } from "@/hooks/use-theme"
+import { useEditMode } from "@/contexts/EditModeContext"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ThemeOption = {
@@ -22,6 +32,8 @@ type ThemeOption = {
 
 type SectionId =
   | "profile"
+  | "mode"
+  | "edit-mode"
   | "notifications"
   | "appearance-theme"
   | "appearance-font"
@@ -59,6 +71,7 @@ function SectionHeader({ icon, title, description }: { icon: ReactNode; title: s
 // ─── Main export ──────────────────────────────────────────────────────────────
 export function Settings({ section = "profile" }: { section?: SectionId }) {
   const { mode, setMode, colorTheme, setColorTheme, appFont, setAppFont, appZoom, setAppZoom, textSize, setTextSize } = useTheme()
+  const { isEditMode, setIsEditMode, hasUnsavedChanges, saveChanges, discardChanges, isSaving } = useEditMode()
   const active = section
 
   // Profile state
@@ -74,6 +87,7 @@ export function Settings({ section = "profile" }: { section?: SectionId }) {
   // Security state
   const [security, setSecurity] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" })
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false })
+  const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false)
 
   // Card columns
   const [cardCols, setCardCols] = useState(() => localStorage.getItem('fcalendar_card_cols') || '2')
@@ -88,6 +102,18 @@ export function Settings({ section = "profile" }: { section?: SectionId }) {
     if (security.newPassword.length < 8) { alert("Password must be at least 8 characters!"); return }
     alert("Password changed successfully!")
     setSecurity({ currentPassword: "", newPassword: "", confirmPassword: "" })
+  }
+
+  const handleEditModeSwitch = (checked: boolean) => {
+    if (checked) {
+      setIsEditMode(true)
+      return
+    }
+    if (hasUnsavedChanges) {
+      setUnsavedDialogOpen(true)
+      return
+    }
+    setIsEditMode(false)
   }
 
   // ── Render section content ────────────────────────────────────────────────
@@ -173,24 +199,78 @@ export function Settings({ section = "profile" }: { section?: SectionId }) {
         )
       }
 
+      // ── Mode ──────────────────────────────────────────────────────────────
+      case "mode":
+        return (
+          <div>
+            <SectionHeader icon={<Sun className="size-5" />} title="Mode" description="Switch between light and dark mode." />
+            <div className="space-y-4">
+              <Field orientation="horizontal" className="justify-between rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm">
+                <div className="min-w-0">
+                  <FieldLabel htmlFor="settings-dark-mode" className="text-sm font-medium leading-tight block">
+                    Dark Mode
+                  </FieldLabel>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-tight">
+                    Toggle ON for dark mode, OFF for light mode.
+                  </p>
+                </div>
+                <Switch
+                  id="settings-dark-mode"
+                  size="default"
+                  checked={mode === "dark"}
+                  onCheckedChange={(checked) => setMode(checked ? "dark" : "light")}
+                  className="shrink-0 ml-4"
+                />
+              </Field>
+            </div>
+          </div>
+        )
+
+      // ── Edit Mode ─────────────────────────────────────────────────────────
+      case "edit-mode":
+        return (
+          <div>
+            <SectionHeader icon={<Pencil className="size-5" />} title="Edit Mode" description="Enable editing features for calendar, routes, and roster." />
+            <div className="space-y-4">
+              <Field orientation="horizontal" className="justify-between rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm">
+                <div className="min-w-0">
+                  <FieldLabel htmlFor="settings-edit-mode" className="text-sm font-medium leading-tight block">
+                    Edit Mode
+                  </FieldLabel>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-tight">
+                    Turn on to add, edit, or delete data.
+                  </p>
+                </div>
+                <Switch
+                  id="settings-edit-mode"
+                  size="default"
+                  checked={isEditMode}
+                  onCheckedChange={handleEditModeSwitch}
+                  className="shrink-0 ml-4"
+                />
+              </Field>
+
+              {hasUnsavedChanges && (
+                <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 p-3">
+                  <p className="text-xs font-medium text-foreground">Unsaved changes detected.</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Button size="sm" onClick={async () => { await saveChanges() }} disabled={isSaving}>
+                      {isSaving ? "Saving..." : "Save Changes"}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={discardChanges}>Discard Changes</Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+
       // ── Appearance: Theme & Mode ──────────────────────────────────────────
       case "appearance-theme":
         return (
           <div>
-            <SectionHeader icon={<Brush className="size-5" />} title="Theme & Mode" description="Choose light/dark mode and app colour theme." />
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Display Mode</label>
-                <div className="flex gap-2">
-                  <button onClick={() => setMode("light")} className={`flex items-center gap-2 flex-1 py-2 px-4 rounded-md border transition-colors ${mode === "light" ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-accent border-border"}`}>
-                    <Sun className="size-4" />Light
-                  </button>
-                  <button onClick={() => setMode("dark")} className={`flex items-center gap-2 flex-1 py-2 px-4 rounded-md border transition-colors ${mode === "dark" ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-accent border-border"}`}>
-                    <Moon className="size-4" />Dark
-                  </button>
-                </div>
-              </div>
-              <Separator />
+            <SectionHeader icon={<Brush className="size-5" />} title="Appearance" description="Choose your app colour theme." />
+            <div className="space-y-3">
               <div className="space-y-3">
                 <label className="text-sm font-medium">Color Theme</label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -503,6 +583,38 @@ export function Settings({ section = "profile" }: { section?: SectionId }) {
     <div className="flex flex-1 flex-col min-h-0 overflow-y-auto p-4 md:p-6 max-w-3xl w-full mx-auto" style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
       {renderContent()}
 
+      <Dialog open={unsavedDialogOpen} onOpenChange={setUnsavedDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Unsaved Changes</DialogTitle>
+            <DialogDescription>
+              You have unsaved changes. What would you like to do before turning off Edit Mode?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                discardChanges()
+                setUnsavedDialogOpen(false)
+                setIsEditMode(false)
+              }}
+            >
+              Discard Changes
+            </Button>
+            <Button
+              onClick={async () => {
+                await saveChanges()
+                setUnsavedDialogOpen(false)
+                setIsEditMode(false)
+              }}
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving..." : "Save & Turn Off"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   )

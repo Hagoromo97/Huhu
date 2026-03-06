@@ -960,7 +960,7 @@ export function RouteList() {
         <section className="rounded-3xl border border-border/60 bg-card/80 backdrop-blur-sm shadow-[0_18px_45px_-30px_hsl(var(--foreground)/0.6)] p-5 md:p-7 space-y-5">
           <div className="flex flex-col gap-2">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Route Command Center</h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-foreground/75 dark:text-muted-foreground">
               {routeStats.totalRoutes} routes, {routeStats.totalStops} stops, on-track {routeStats.onTrackPct}%
             </p>
           </div>
@@ -980,7 +980,7 @@ export function RouteList() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-primary/20 bg-primary/8 px-4 py-3 text-sm text-primary/90 flex items-center gap-2">
+          <div className="rounded-2xl border border-primary/20 bg-primary/8 px-4 py-3 text-sm text-foreground/85 dark:text-primary/90 flex items-center gap-2">
             <ShieldAlert className="size-4" />
             {smartHint}
           </div>
@@ -1035,7 +1035,7 @@ export function RouteList() {
                         className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${
                           filterRegion === r
                             ? r === "KL" ? "bg-blue-500 text-white" : r === "Sel" ? "bg-red-500 text-white" : "bg-foreground text-background"
-                            : "bg-muted text-muted-foreground hover:bg-muted-foreground/20"
+                            : "bg-muted text-foreground/75 dark:text-muted-foreground hover:bg-muted-foreground/20"
                         }`}
                       >
                         {r === "all" ? "All" : r}
@@ -1053,7 +1053,7 @@ export function RouteList() {
                         className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-all ${
                           filterShift === s
                             ? s === "AM" ? "bg-orange-500 text-white" : s === "PM" ? "bg-indigo-500 text-white" : "bg-foreground text-background"
-                            : "bg-muted text-muted-foreground hover:bg-muted-foreground/20"
+                            : "bg-muted text-foreground/75 dark:text-muted-foreground hover:bg-muted-foreground/20"
                         }`}
                       >
                         {s === "all" ? "All" : s}
@@ -1079,7 +1079,7 @@ export function RouteList() {
                 className={`h-8 px-3 rounded-full text-xs font-semibold transition-colors ${
                   routeFocusFilter === value
                     ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:text-foreground'
+                    : 'bg-muted text-foreground/75 dark:text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {label}
@@ -1094,7 +1094,7 @@ export function RouteList() {
                 <button
                   key={value}
                   onClick={() => setRouteSort(value)}
-                  className={`h-7 px-3 rounded-full text-xs font-semibold ${routeSort === value ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}
+                  className={`h-7 px-3 rounded-full text-xs font-semibold ${routeSort === value ? 'bg-background text-foreground shadow-sm' : 'text-foreground/75 dark:text-muted-foreground'}`}
                 >
                   {label}
                 </button>
@@ -1143,15 +1143,15 @@ export function RouteList() {
                   }`}>{routeStatus}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-muted-foreground">{route.code}</span>
+                  <span className="text-xs font-mono text-foreground/75 dark:text-muted-foreground">{route.code}</span>
                   <span className={`shrink-0 px-1.5 py-0.5 text-[10px] font-bold rounded text-white tracking-wide ${
-                    route.shift === 'AM' ? 'bg-blue-500' : route.shift === 'PM' ? 'bg-orange-600' : 'bg-muted text-muted-foreground'
+                    route.shift === 'AM' ? 'bg-blue-500' : route.shift === 'PM' ? 'bg-orange-600' : 'bg-muted text-foreground/75 dark:text-muted-foreground'
                   }`}>{route.shift || '—'}</span>
                 </div>
                 <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
                   <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
                 </div>
-                <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-foreground/75 dark:text-muted-foreground">
                   <span className="inline-flex items-center gap-1"><Route className="size-3.5" />{totalStops} stops</span>
                   <span className="inline-flex items-center gap-1"><Navigation className="size-3.5" />{activeStops} active</span>
                   <span className="inline-flex items-center gap-1"><Timer className="size-3.5" />{Math.max(totalStops - activeStops, 0)} off</span>

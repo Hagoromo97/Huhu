@@ -838,6 +838,39 @@ body {
     --sidebar-ring: oklch(0.6500 0.2000 195);
 }
 
+/* Light-mode contrast guard across all color themes.
+ * Keeps text readable even when a theme's foreground/muted tones are too soft. */
+.light {
+  --color-foreground: color-mix(in oklab, var(--foreground) 88%, black);
+  --color-card-foreground: color-mix(in oklab, var(--card-foreground) 88%, black);
+  --color-popover-foreground: color-mix(in oklab, var(--popover-foreground) 88%, black);
+  --color-secondary-foreground: color-mix(in oklab, var(--secondary-foreground) 86%, black);
+  --color-accent-foreground: color-mix(in oklab, var(--accent-foreground) 86%, black);
+  --color-sidebar-foreground: color-mix(in oklab, var(--sidebar-foreground) 86%, black);
+  --color-sidebar-accent-foreground: color-mix(in oklab, var(--sidebar-accent-foreground) 86%, black);
+  --color-muted-foreground: color-mix(in oklab, var(--muted-foreground) 72%, black);
+}
+
+/* Strengthen dimmed muted text helpers in light mode. */
+.light .text-muted-foreground\/40 {
+  color: color-mix(in oklab, var(--color-muted-foreground) 76%, var(--color-foreground)) !important;
+}
+.light .text-muted-foreground\/50 {
+  color: color-mix(in oklab, var(--color-muted-foreground) 80%, var(--color-foreground)) !important;
+}
+.light .text-muted-foreground\/55 {
+  color: color-mix(in oklab, var(--color-muted-foreground) 82%, var(--color-foreground)) !important;
+}
+.light .text-muted-foreground\/60 {
+  color: color-mix(in oklab, var(--color-muted-foreground) 84%, var(--color-foreground)) !important;
+}
+.light .text-muted-foreground\/70 {
+  color: color-mix(in oklab, var(--color-muted-foreground) 88%, var(--color-foreground)) !important;
+}
+.light .text-muted-foreground\/80 {
+  color: color-mix(in oklab, var(--color-muted-foreground) 92%, var(--color-foreground)) !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -880,6 +913,22 @@ body {
 }
 
 @layer utilities {
+  @keyframes food-fab-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+  }
+
+  @keyframes food-fab-enter {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
   .hover-elevate {
     @apply transition-all duration-200;
   }
