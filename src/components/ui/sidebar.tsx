@@ -185,7 +185,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+          className="bg-background/95 text-sidebar-foreground border-sidebar-border/60 supports-[backdrop-filter]:bg-background/90 w-(--sidebar-width) border p-0 backdrop-blur-sm [&>button]:hidden"
           onOpenAutoFocus={e => e.preventDefault()}
           style={
             {
@@ -242,7 +242,7 @@ function Sidebar({
         <div
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
-          className="bg-sidebar/95 supports-[backdrop-filter]:bg-sidebar/85 border-sidebar-border/70 flex h-full w-full flex-col border backdrop-blur-sm group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:rounded-xl group-data-[variant=floating]:shadow-sm"
+          className="bg-background/95 supports-[backdrop-filter]:bg-background/90 border-sidebar-border/60 flex h-full w-full flex-col border backdrop-blur-sm shadow-[2px_0_6px_-2px_rgba(0,0,0,0.10)] group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:rounded-xl group-data-[variant=floating]:shadow-sm"
         >
           {children}
         </div>

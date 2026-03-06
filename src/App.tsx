@@ -57,14 +57,14 @@ function QuickActionCard({
   label,
   description,
   page,
-  gradient,
+  iconClass,
   onNavigate,
 }: {
   icon: React.ElementType
   label: string
   description: string
   page: string
-  gradient: string
+  iconClass: string
   onNavigate: (page: string) => void
 }) {
   return (
@@ -72,13 +72,11 @@ function QuickActionCard({
       onClick={() => onNavigate(page)}
       className="group flex flex-col items-start gap-2 rounded-xl p-3 sm:gap-2.5 sm:p-3.5 text-left border border-border bg-card hover:bg-muted/40 hover:border-border/80 active:scale-[0.97] transition-all duration-150"
     >
-      <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${gradient} shadow-sm shrink-0`}>
-        <Icon className="size-3.5 text-white" />
+      <div className="flex items-center gap-2 min-w-0">
+        <Icon className={`size-4 shrink-0 ${iconClass}`} />
+        <p className="text-sm font-semibold text-foreground tracking-tight leading-snug truncate">{label}</p>
       </div>
-      <div className="min-w-0">
-        <p className="text-sm font-semibold text-foreground tracking-tight leading-snug">{label}</p>
-        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{description}</p>
-      </div>
+      <p className="text-xs text-muted-foreground leading-snug">{description}</p>
     </button>
   )
 }
@@ -119,11 +117,11 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
       <div className="space-y-2.5 sm:space-y-3">
         <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-0.5">Quick Access</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3.5">
-          <QuickActionCard icon={CalendarIcon} label="Calendar" description="View monthly schedule" page="calendar" gradient="bg-gradient-to-br from-blue-500 to-blue-600" onNavigate={onNavigate} />
-          <QuickActionCard icon={ClipboardList} label="Route List" description="Manage vending routes" page="route-list" gradient="bg-gradient-to-br from-violet-500 to-violet-600" onNavigate={onNavigate} />
-          <QuickActionCard icon={MapPin} label="Location" description="Delivery records" page="deliveries" gradient="bg-gradient-to-br from-emerald-500 to-emerald-600" onNavigate={onNavigate} />
-          <QuickActionCard icon={Users} label="Rooster" description="Team schedule" page="rooster" gradient="bg-gradient-to-br from-orange-500 to-orange-600" onNavigate={onNavigate} />
-          <QuickActionCard icon={Images} label="Album" description="View all VM photos" page="gallery-album" gradient="bg-gradient-to-br from-fuchsia-500 to-fuchsia-600" onNavigate={onNavigate} />
+          <QuickActionCard icon={CalendarIcon} label="Calendar" description="View monthly schedule" page="calendar" iconClass="text-blue-600 dark:text-blue-400" onNavigate={onNavigate} />
+          <QuickActionCard icon={ClipboardList} label="Route List" description="Manage vending routes" page="route-list" iconClass="text-violet-600 dark:text-violet-400" onNavigate={onNavigate} />
+          <QuickActionCard icon={MapPin} label="Location" description="Delivery records" page="deliveries" iconClass="text-emerald-600 dark:text-emerald-400" onNavigate={onNavigate} />
+          <QuickActionCard icon={Users} label="Rooster" description="Team schedule" page="rooster" iconClass="text-orange-600 dark:text-orange-400" onNavigate={onNavigate} />
+          <QuickActionCard icon={Images} label="Album" description="View all VM photos" page="gallery-album" iconClass="text-fuchsia-600 dark:text-fuchsia-400" onNavigate={onNavigate} />
         </div>
       </div>
 
