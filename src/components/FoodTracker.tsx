@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { Calendar, Clock3, Edit3, List, PackageOpen, Plus, Sparkles, Trash2, Undo2, X } from "lucide-react"
+import { AlertTriangle, Calendar, Edit3, List, PackageOpen, Plus, Sparkles, Trash2, Undo2, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -91,6 +91,17 @@ function prettyDate(isoDate: string) {
   return d.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })
 }
 
+function getLocalDateInputValue(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+function dayKey(year: number, month: number, day: number) {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+}
+
 export function FoodTracker() {
   const [items, setItems] = useState<FoodItem[]>(() => readList(STORAGE_ACTIVE))
   const [trash, setTrash] = useState<FoodItem[]>(() => readList(STORAGE_TRASH))
@@ -101,7 +112,7 @@ export function FoodTracker() {
   const [form, setForm] = useState({
     name: "",
     category: "None",
-    expiryDate: new Date().toISOString().slice(0, 10),
+    expiryDate: getLocalDateInputValue(),
     notes: "",
   })
 
@@ -136,9 +147,38 @@ export function FoodTracker() {
     return d >= 0 && d <= 7
   }).length, [items])
 
+  const miniCalendar = useMemo(() => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth()
+    const firstDay = new Date(year, month, 1)
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const startOffset = firstDay.getDay()
+
+    const expiryCountByDay = new Map<number, number>()
+    items.forEach((item) => {
+      const expiry = new Date(item.expiryDate)
+      if (expiry.getFullYear() === year && expiry.getMonth() === month) {
+        const d = expiry.getDate()
+        expiryCountByDay.set(d, (expiryCountByDay.get(d) ?? 0) + 1)
+      }
+    })
+
+    return {
+      label: now.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      year,
+      month,
+      daysInMonth,
+      startOffset,
+      today: now.getDate(),
+      todayKey: dayKey(year, month, now.getDate()),
+      expiryCountByDay,
+    }
+  }, [items])
+
   const openAdd = () => {
     setEditing(null)
-    setForm({ name: "", category: "None", expiryDate: new Date().toISOString().slice(0, 10), notes: "" })
+    setForm({ name: "", category: "None", expiryDate: getLocalDateInputValue(), notes: "" })
     setDialogOpen(true)
   }
 
@@ -151,6 +191,11 @@ export function FoodTracker() {
   const saveItem = () => {
     if (!form.name.trim()) {
       toast.error("Please enter item name")
+      return
+    }
+
+    if (!editing && daysUntil(form.expiryDate) < 0) {
+      toast.error("Expiry date cannot be in the past")
       return
     }
 
@@ -206,9 +251,12 @@ export function FoodTracker() {
     pushNotice("Trash cleared", "warning")
   }
 
+  const isAddWithPastDate = !editing && daysUntil(form.expiryDate) < 0
+  const todayISO = getLocalDateInputValue()
+
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col flex-1 min-h-0 p-4 md:p-6 gap-4 overflow-y-auto animate-in fade-in-0 duration-500" style={{ paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}>
-      <div className="fixed top-4 right-4 z-50 space-y-2 pointer-events-none">
+    <div className="mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col gap-5 overflow-y-auto p-3 sm:p-4 md:gap-6 md:p-6 animate-in fade-in-0 duration-500" style={{ paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}>
+      <div className="pointer-events-none fixed right-4 top-4 z-50 max-w-[min(90vw,22rem)] space-y-2">
         {notices.map((n) => (
           <div
             key={n.id}
@@ -225,87 +273,105 @@ export function FoodTracker() {
         ))}
       </div>
 
-      <div className="glass-card relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-primary/10 via-card/95 to-emerald-500/10 p-4 md:p-5 shadow-sm animate-in slide-in-from-top-2 duration-500">
+      <div className="glass-card relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-primary/10 via-card/95 to-emerald-500/10 p-4 sm:p-5 md:p-6 shadow-sm animate-in slide-in-from-top-2 duration-500">
         <div className="pointer-events-none absolute -right-10 -top-10 size-36 rounded-full bg-primary/15 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-12 -left-12 size-40 rounded-full bg-emerald-500/15 blur-3xl" />
 
-        <div className="relative flex items-center justify-between gap-3">
-          <div>
+        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="space-y-1">
             <p className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary">
               <Sparkles className="size-3" /> Pantry Intelligence
             </p>
-            <h1 className="mt-2 text-lg font-semibold text-foreground md:text-xl">Food Tracker</h1>
-            <p className="text-xs text-muted-foreground mt-0.5 md:text-sm">Track expiry, reduce waste, and keep your kitchen fresh.</p>
+            <h1 className="pt-0.5 text-lg font-semibold text-foreground md:text-2xl">Food Tracker</h1>
+            <p className="text-xs text-muted-foreground md:text-sm">Track expiry, reduce waste, and keep your kitchen fresh.</p>
           </div>
-          <Button size="sm" onClick={openAdd} className="hidden md:inline-flex gap-1.5 shadow-sm">
+          <Button size="sm" onClick={openAdd} className="hidden gap-1.5 shadow-sm md:inline-flex">
             <Plus className="size-3.5" /> Add Item
           </Button>
         </div>
 
-        <div className="relative mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-          <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3">
-            <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">Active Stock</p>
-            <div className="mt-1 flex items-end justify-between">
-              <p className="text-2xl font-semibold text-foreground">{items.length}</p>
-              <PackageOpen className="size-4 text-emerald-600/70 dark:text-emerald-300/80" />
-            </div>
+        <div className="relative mt-5 rounded-2xl bg-background/70 p-3 sm:p-4">
+          <div className="mb-2.5 flex items-center justify-between">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Mini Calendar</p>
+            <p className="text-xs font-medium text-foreground">{miniCalendar.label}</p>
           </div>
-          <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-3">
-            <p className="text-[11px] font-medium text-amber-700 dark:text-amber-300">Expiring in 7 Days</p>
-            <div className="mt-1 flex items-end justify-between">
-              <p className="text-2xl font-semibold text-foreground">{expiringSoon}</p>
-              <Clock3 className="size-4 text-amber-600/70 dark:text-amber-300/80" />
-            </div>
+
+          <div className="grid grid-cols-7 gap-1.5 text-center text-[9px] font-semibold uppercase text-muted-foreground sm:text-[10px]">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+              <span key={d} className="py-1">{d}</span>
+            ))}
           </div>
-          <div className="rounded-xl border border-rose-500/25 bg-rose-500/10 p-3">
-            <p className="text-[11px] font-medium text-rose-700 dark:text-rose-300">In Trash</p>
-            <div className="mt-1 flex items-end justify-between">
-              <p className="text-2xl font-semibold text-foreground">{trash.length}</p>
-              <Trash2 className="size-4 text-rose-600/70 dark:text-rose-300/80" />
-            </div>
+
+          <div className="mt-1.5 grid grid-cols-7 gap-1.5">
+            {Array.from({ length: miniCalendar.startOffset }).map((_, idx) => (
+              <span key={`empty-${idx}`} className="h-8 rounded-md bg-transparent sm:h-9" />
+            ))}
+
+            {Array.from({ length: miniCalendar.daysInMonth }, (_, idx) => {
+              const day = idx + 1
+              const count = miniCalendar.expiryCountByDay.get(day) ?? 0
+              const isToday = dayKey(miniCalendar.year, miniCalendar.month, day) === miniCalendar.todayKey
+
+              return (
+                <div
+                  key={day}
+                  className={`relative flex h-8 items-center justify-center rounded-lg text-xs font-medium transition-colors sm:h-9 ${
+                    count > 0
+                      ? "text-emerald-700 dark:text-emerald-300"
+                      : "text-muted-foreground"
+                  } ${isToday ? "ring-1 ring-primary/70 text-foreground" : ""}`}
+                  title={count > 0 ? `${count} item(s) expire on this day` : undefined}
+                >
+                  {day}
+                  {count > 0 && (
+                    <span className="absolute -bottom-0.5 size-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>
 
-      <div className="glass-card flex items-center gap-2 rounded-xl border border-border/70 bg-card/85 p-1.5 shadow-sm">
+      <div className="glass-card flex items-center gap-2 rounded-2xl border border-border/70 bg-card/85 p-1.5 shadow-sm">
         <button
           onClick={() => setActiveTab("active")}
-          className={`h-8 flex-1 px-3 rounded-lg text-xs font-semibold transition-all ${activeTab === "active" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
+          className={`h-9 flex-1 rounded-xl px-3 text-xs font-semibold transition-all ${activeTab === "active" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"}`}
         >
           <span className="inline-flex items-center gap-1.5"><List className="size-3.5" />Active</span>
         </button>
         <button
           onClick={() => setActiveTab("trash")}
-          className={`h-8 flex-1 px-3 rounded-lg text-xs font-semibold transition-all ${activeTab === "trash" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
+          className={`h-9 flex-1 rounded-xl px-3 text-xs font-semibold transition-all ${activeTab === "trash" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"}`}
         >
           <span className="inline-flex items-center gap-1.5"><Trash2 className="size-3.5" />Trash</span>
         </button>
       </div>
 
       {activeTab === "active" ? (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {items.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center">
-              <PackageOpen className="size-9 mx-auto text-muted-foreground mb-3" />
-              <p className="text-sm text-muted-foreground">No food items yet. Add your first item to start tracking.</p>
+            <div className="rounded-3xl border border-dashed border-border bg-card px-6 py-12 text-center">
+              <PackageOpen className="mx-auto mb-3 size-9 text-muted-foreground" />
+              <p className="mx-auto max-w-md text-sm text-muted-foreground">No food items yet. Add your first item to start tracking.</p>
             </div>
           ) : (
             grouped.map(([month, groupItems], groupIndex) => (
-              <div key={month} className="glass-card rounded-2xl border border-border/70 bg-card/90 p-3.5 shadow-sm animate-in fade-in-0 slide-in-from-bottom-2 duration-500" style={{ animationDelay: `${groupIndex * 80}ms` }}>
-                <div className="flex items-center justify-between mb-2.5">
+              <div key={month} className="glass-card rounded-3xl border border-border/70 bg-card/90 p-4 md:p-5 shadow-sm animate-in fade-in-0 slide-in-from-bottom-2 duration-500" style={{ animationDelay: `${groupIndex * 80}ms` }}>
+                <div className="mb-3 flex items-center justify-between">
                   <p className="text-sm font-semibold flex items-center gap-1.5"><Calendar className="size-3.5 text-primary" />{month}</p>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">{groupItems.length} items</span>
                 </div>
-                <div className="space-y-2.5 pl-3 border-l-2 border-primary/20">
+                <div className="space-y-3">
                   {groupItems.map((item, itemIndex) => {
                     const d = daysUntil(item.expiryDate)
                     const countdown = getCountdownMeta(d)
                     return (
-                      <div key={item.id} className="glass-card group relative flex items-center justify-between gap-2 rounded-xl border border-border/70 bg-background/65 p-2.5 md:p-3 animate-in fade-in-0 slide-in-from-bottom-1 duration-500 hover:bg-background/85" style={{ animationDelay: `${groupIndex * 80 + itemIndex * 30}ms` }}>
-                        <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary/50 transition-colors group-hover:bg-primary" />
-                        <div className="min-w-0 pl-1.5">
+                      <div key={item.id} className="glass-card group relative flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/65 p-3 md:p-3.5 animate-in fade-in-0 slide-in-from-bottom-1 duration-500 hover:bg-background/85" style={{ animationDelay: `${groupIndex * 80 + itemIndex * 30}ms` }}>
+                        <span className="absolute bottom-3 left-0 top-3 w-0.5 rounded-r-full bg-primary/45 transition-colors group-hover:bg-primary" />
+                        <div className="min-w-0 pl-2">
                           <p className="text-sm font-semibold truncate">{item.name}</p>
-                          <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${CATEGORY_STYLES[item.category] ?? CATEGORY_STYLES.None}`}>
                               {item.category}
                             </span>
@@ -314,13 +380,13 @@ export function FoodTracker() {
                             </span>
                             <span className="text-[10px] text-muted-foreground">Expires {prettyDate(item.expiryDate)}</span>
                           </div>
-                          {item.notes && <p className="mt-1 text-[11px] text-muted-foreground truncate">{item.notes}</p>}
+                          {item.notes && <p className="mt-1.5 text-[11px] text-muted-foreground truncate">{item.notes}</p>}
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Button variant="outline" size="icon" onClick={() => openEdit(item)} className="size-7 border-border/70">
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <Button variant="outline" size="icon" onClick={() => openEdit(item)} className="size-8 border-border/70">
                             <Edit3 className="size-3.5" />
                           </Button>
-                          <Button variant="destructive" size="icon" onClick={() => moveToTrash(item.id)} className="size-7">
+                          <Button variant="destructive" size="icon" onClick={() => moveToTrash(item.id)} className="size-8">
                             <Trash2 className="size-3.5" />
                           </Button>
                         </div>
@@ -333,7 +399,7 @@ export function FoodTracker() {
           )}
         </div>
       ) : (
-        <div className="glass-card rounded-2xl border border-border/70 bg-card/90 p-3.5 space-y-2.5 shadow-sm">
+        <div className="glass-card space-y-3 rounded-3xl border border-border/70 bg-card/90 p-4 shadow-sm md:p-5">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold">Deleted Items</p>
             {trash.length > 0 && <Button variant="outline" size="sm" onClick={clearTrash} className="h-7 px-2 text-[11px]">Clear Trash</Button>}
@@ -342,21 +408,21 @@ export function FoodTracker() {
             <p className="text-sm text-muted-foreground py-4 text-center">Trash is empty.</p>
           ) : (
             trash.map((item) => (
-              <div key={item.id} className="glass-card flex items-center justify-between gap-2 rounded-xl border border-border/70 bg-muted/15 p-2.5">
+              <div key={item.id} className="glass-card flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-muted/15 p-3">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold truncate">{item.name}</p>
-                  <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                  <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${CATEGORY_STYLES[item.category] ?? CATEGORY_STYLES.None}`}>
                       {item.category}
                     </span>
                     <span className="text-[10px] text-muted-foreground">Deleted {item.deletedAt ? prettyDate(item.deletedAt) : "-"}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button variant="outline" size="icon" onClick={() => restoreItem(item.id)} className="size-7 border-border/70" title="Restore item">
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <Button variant="outline" size="icon" onClick={() => restoreItem(item.id)} className="size-8 border-border/70" title="Restore item">
                     <Undo2 className="size-3.5" />
                   </Button>
-                  <Button variant="destructive" size="icon" onClick={() => permanentDelete(item.id)} className="size-7" title="Delete permanently">
+                  <Button variant="destructive" size="icon" onClick={() => permanentDelete(item.id)} className="size-8" title="Delete permanently">
                     <X className="size-3.5" />
                   </Button>
                 </div>
@@ -388,7 +454,18 @@ export function FoodTracker() {
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground">Expiry Date</label>
-              <Input type="date" value={form.expiryDate} onChange={(e) => setForm((p) => ({ ...p, expiryDate: e.target.value }))} />
+              <Input
+                type="date"
+                value={form.expiryDate}
+                min={!editing ? todayISO : undefined}
+                onChange={(e) => setForm((p) => ({ ...p, expiryDate: e.target.value }))}
+              />
+              {isAddWithPastDate && (
+                <div className="mt-1.5 flex items-start gap-1.5 text-[11px] text-red-600 dark:text-red-400">
+                  <AlertTriangle className="mt-0.5 size-3 shrink-0" />
+                  <p>You cannot set an expiry date in the past.</p>
+                </div>
+              )}
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground">Notes</label>
@@ -397,7 +474,7 @@ export function FoodTracker() {
           </div>
           <div className="flex justify-end gap-2 mt-2">
             <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button size="sm" onClick={saveItem}>{editing ? "Save" : "Add"}</Button>
+            <Button size="sm" onClick={saveItem} disabled={isAddWithPastDate}>{editing ? "Save" : "Add"}</Button>
           </div>
         </DialogContent>
       </Dialog>
