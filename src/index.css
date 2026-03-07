@@ -1,3 +1,4 @@
+@import "normalize.css";
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -261,6 +262,7 @@
 /* Safe area support for notch/island devices */
 html {
   height: 100%;
+  background-color: hsl(var(--background));
   /*
    * Fluid device-aware font-size:
    *   --text-size-base  → user's chosen size (set by useTheme, default 16px)
@@ -321,6 +323,7 @@ html[data-density="spacious"] {
 
 body {
   height: 100%;
+  background-color: hsl(var(--background));
   -webkit-tap-highlight-color: transparent;
   width: 100%;
   overflow-x: hidden;
