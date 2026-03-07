@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import QrScanner from "qr-scanner"
-import { Plus, Trash2, QrCode, ExternalLink, Pencil, Link2, ImageUp, X, CheckCircle2, Loader2, AlertCircle, Check, Camera } from "lucide-react"
+import { Plus, Trash2, QrCode, ExternalLink, Pencil, Link2, ImageUp, X, CheckCircle2, Loader2, AlertCircle, Check, Camera, MapPin } from "lucide-react"
 import { toast } from "sonner"
 import "lightgallery/css/lightgallery.css"
 import "lightgallery/css/lg-zoom.css"
@@ -220,7 +220,7 @@ export function RowInfoModal({ open, onOpenChange, point, isEditMode, onSave }: 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm rounded-2xl p-0 overflow-hidden gap-0 border-border">
+      <DialogContent className="w-[92vw] md:w-[25rem] max-w-[25rem] rounded-2xl p-0 overflow-hidden gap-0 border-border">
         {/* Header */}
         <DialogHeader className="px-5 pt-5 pb-4 border-b border-border bg-background">
           <div className="flex items-center gap-3">
@@ -270,6 +270,10 @@ export function RowInfoModal({ open, onOpenChange, point, isEditMode, onSave }: 
               )
             )}
             <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1.5 mb-1">
+                <MapPin className="size-3" />
+                Row Info
+              </p>
               <DialogTitle className="text-base font-bold text-foreground truncate">
                 {point.name}
               </DialogTitle>
@@ -426,7 +430,7 @@ export function RowInfoModal({ open, onOpenChange, point, isEditMode, onSave }: 
 
           {/* Avatar Gallery Dialog */}
           <Dialog open={showAvatarDialog} onOpenChange={(o) => { if (!o) { setAvatarTab("url"); setAvatarUrlInput("") } setShowAvatarDialog(o) }}>
-            <DialogContent className="max-w-sm rounded-2xl">
+            <DialogContent className="w-[92vw] md:w-[25rem] max-w-[25rem] rounded-2xl">
               <DialogHeader>
                 <DialogTitle className="text-base">Avatar Images</DialogTitle>
                 <DialogDescription>Manage avatar images. Click an image to set it as display.</DialogDescription>
@@ -614,7 +618,7 @@ export function RowInfoModal({ open, onOpenChange, point, isEditMode, onSave }: 
 
           {/* QR Code dialog — unified for view + edit mode */}
           <Dialog open={showQRDialog} onOpenChange={(o) => { if (!o) { setQrTab("url"); setQrDecodeStatus("idle") } setShowQRDialog(o) }}>
-            <DialogContent className="max-w-sm rounded-2xl p-0 overflow-hidden gap-0">
+            <DialogContent className="w-[92vw] md:w-[25rem] max-w-[25rem] rounded-2xl p-0 overflow-hidden gap-0">
 
               {/* Header */}
               <DialogHeader className="px-5 pt-5 pb-4 border-b border-border">
@@ -785,7 +789,7 @@ export function RowInfoModal({ open, onOpenChange, point, isEditMode, onSave }: 
 
           {/* Confirmation dialog (open external link) */}
           <Dialog open={!!pendingUrl} onOpenChange={(o) => { if (!o) { setPendingUrl(null); setPendingUrlLabel("") } }}>
-            <DialogContent className="max-w-sm rounded-2xl p-0 overflow-hidden gap-0">
+            <DialogContent className="w-[92vw] md:w-[25rem] max-w-[25rem] rounded-2xl p-0 overflow-hidden gap-0">
 
               {/* Header */}
               <DialogHeader className="px-5 pt-5 pb-4 border-b border-border">

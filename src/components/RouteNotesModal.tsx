@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { StickyNote, History, Plus, Trash2, Clock, Loader2, CheckCircle2, AlertCircle, Info } from "lucide-react"
+import { StickyNote, History, Plus, Trash2, Clock, Loader2, CheckCircle2, AlertCircle, Info, Route } from "lucide-react"
 import { toast } from "sonner"
 
 export interface RouteNote {
@@ -190,9 +190,24 @@ export function RouteNotesModal({ open, onOpenChange, routeId, routeName, routeI
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm p-0 gap-0 overflow-hidden rounded-2xl flex flex-col" style={{ maxHeight: "85dvh" }}>
+      <DialogContent className="w-[92vw] md:w-[25rem] max-w-[25rem] p-0 gap-0 overflow-hidden rounded-2xl flex flex-col" style={{ maxHeight: "85dvh" }}>
         <DialogHeader className="px-4 pt-4 pb-0 shrink-0">
-          <DialogTitle className="text-sm font-semibold truncate">{routeName}</DialogTitle>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary inline-flex items-center gap-1.5">
+              <Route className="size-3" />
+              Route Card Info
+            </p>
+            <DialogTitle className="text-sm font-semibold truncate mt-1">{routeName}</DialogTitle>
+            {routeInfo && (
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-semibold">{routeInfo.code}</span>
+                <span className="px-2 py-0.5 rounded-md bg-muted text-foreground text-[10px] font-semibold">{routeInfo.shift || "No Shift"}</span>
+                <span className="px-2 py-0.5 rounded-md bg-muted/70 text-muted-foreground text-[10px] font-medium">
+                  {routeInfo.deliveryPoints.length} stops
+                </span>
+              </div>
+            )}
+          </div>
         </DialogHeader>
 
         {/* Tabs */}
@@ -239,7 +254,7 @@ export function RouteNotesModal({ open, onOpenChange, routeId, routeName, routeI
               }`}
             >
               <Info className="size-3.5" />
-              Info
+              Route Info
             </button>
           )}
         </div>

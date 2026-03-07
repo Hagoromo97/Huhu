@@ -47,6 +47,8 @@ interface DeliveryPoint {
   avatarImages?: string[]
 }
 
+type DeliveryType = DeliveryPoint["delivery"]
+
 interface Route {
   id: string
   name: string
@@ -71,6 +73,52 @@ function isDeliveryActive(delivery: DeliveryPoint['delivery'], date: Date = new 
 
 // ── Distance helpers ──────────────────────────────────────────────
 const DEFAULT_MAP_CENTER = { lat: 3.0695500, lng: 101.5469179 }
+const MAP_SETTINGS_STORAGE_KEY = "fcalendar_route_map_settings"
+
+const DEFAULT_DELIVERY_FILTERS: Record<DeliveryType, boolean> = {
+  Daily: true,
+  Weekday: true,
+  "Alt 1": true,
+  "Alt 2": true,
+}
+
+interface StoredMapSettings {
+  markerStyle: "standard" | "dot" | "ring" | "diamond"
+  includeOtherRoutes: boolean
+  colorByRoute: boolean
+  showRouteLines: boolean
+  startLat: number
+  startLng: number
+  radiusKm: number
+  onlyActivePoints: boolean
+  restrictByRadius: boolean
+  deliveryFilters: Record<DeliveryType, boolean>
+}
+
+function loadStoredMapSettings(): Partial<StoredMapSettings> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(MAP_SETTINGS_STORAGE_KEY) || "{}")
+    if (!parsed || typeof parsed !== "object") return {}
+    return parsed as Partial<StoredMapSettings>
+  } catch {
+    return {}
+  }
+}
+
+function clampRadiusKm(value: number): number {
+  if (!Number.isFinite(value)) return 1
+  return Math.min(200, Math.max(1, Math.round(value)))
+}
+
+function sanitizeLat(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_MAP_CENTER.lat
+  return Math.min(90, Math.max(-90, value))
+}
+
+function sanitizeLng(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_MAP_CENTER.lng
+  return Math.min(180, Math.max(-180, value))
+}
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371
@@ -151,9 +199,58 @@ export function RouteList() {
 
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
   const [detailFullscreen, setDetailFullscreen] = useState(false)
-  const [dialogView, setDialogView] = useState<'table' | 'map'>('table')
-  const [mapIncludeOtherRoutes, setMapIncludeOtherRoutes] = useState(false)
-  const [mapMarkerStyle, setMapMarkerStyle] = useState<'dot' | 'ring' | 'diamond'>('dot')
+  const [defaultDialogView, setDefaultDialogView] = useState<'table' | 'map'>(() => {
+    try {
+      const stored = localStorage.getItem('fcalendar_default_route_view')
+      return stored === 'map' ? 'map' : 'table'
+    } catch {
+      return 'table'
+    }
+  })
+  const [dialogView, setDialogView] = useState<'table' | 'map'>(defaultDialogView)
+  const [mapIncludeOtherRoutes, setMapIncludeOtherRoutes] = useState(() => {
+    const stored = loadStoredMapSettings()
+    return stored.includeOtherRoutes ?? false
+  })
+  const [mapMarkerStyle, setMapMarkerStyle] = useState<'standard' | 'dot' | 'ring' | 'diamond'>(() => {
+    const stored = loadStoredMapSettings()
+    return stored.markerStyle ?? 'standard'
+  })
+  const [mapColorByRoute, setMapColorByRoute] = useState(() => {
+    const stored = loadStoredMapSettings()
+    return stored.colorByRoute ?? false
+  })
+  const [mapShowRouteLines, setMapShowRouteLines] = useState(() => {
+    const stored = loadStoredMapSettings()
+    return stored.showRouteLines ?? false
+  })
+  const [mapStartingPoint, setMapStartingPoint] = useState<{ lat: number; lng: number }>(() => {
+    const stored = loadStoredMapSettings()
+    return {
+      lat: sanitizeLat(stored.startLat ?? DEFAULT_MAP_CENTER.lat),
+      lng: sanitizeLng(stored.startLng ?? DEFAULT_MAP_CENTER.lng),
+    }
+  })
+  const [mapRadiusKm, setMapRadiusKm] = useState(() => {
+    const stored = loadStoredMapSettings()
+    return clampRadiusKm(stored.radiusKm ?? 15)
+  })
+  const [mapOnlyActivePoints, setMapOnlyActivePoints] = useState(() => {
+    const stored = loadStoredMapSettings()
+    return stored.onlyActivePoints ?? false
+  })
+  const [mapRestrictByRadius, setMapRestrictByRadius] = useState(() => {
+    const stored = loadStoredMapSettings()
+    return stored.restrictByRadius ?? false
+  })
+  const [mapDeliveryFilters, setMapDeliveryFilters] = useState<Record<DeliveryType, boolean>>(() => {
+    const stored = loadStoredMapSettings()
+    return {
+      ...DEFAULT_DELIVERY_FILTERS,
+      ...(stored.deliveryFilters ?? {}),
+    }
+  })
+  const [mapSettingsTab, setMapSettingsTab] = useState<'map' | 'accessibility' | 'filter'>('map')
   const [notesModalOpen, setNotesModalOpen] = useState(false)
   const [notesRouteId, setNotesRouteId] = useState<string>("")
   const [notesRouteName, setNotesRouteName] = useState<string>("")
@@ -211,10 +308,10 @@ export function RouteList() {
     if (pending) {
       sessionStorage.removeItem('fcalendar_open_route')
       setCurrentRouteId(pending)
-      setDialogView('table')
+      setDialogView(defaultDialogView)
       setDetailDialogOpen(true)
     }
-  }, [isLoading])
+  }, [isLoading, defaultDialogView])
 
   useEffect(() => {
     try {
@@ -269,7 +366,7 @@ export function RouteList() {
       const ratio = totalStops > 0 ? activeStops / totalStops : 0
       const hasUnassigned = !route.shift?.trim()
       const nearestKm = route.deliveryPoints.length > 0
-        ? Math.min(...route.deliveryPoints.map(p => haversineKm(DEFAULT_MAP_CENTER.lat, DEFAULT_MAP_CENTER.lng, p.latitude, p.longitude)))
+        ? Math.min(...route.deliveryPoints.map(p => haversineKm(mapStartingPoint.lat, mapStartingPoint.lng, p.latitude, p.longitude)))
         : Number.POSITIVE_INFINITY
 
       return {
@@ -286,7 +383,7 @@ export function RouteList() {
     const focused = withMeta.filter(item => {
       if (routeFocusFilter === "all") return true
       if (routeFocusFilter === "urgent") return item.inactiveStops > 0
-      if (routeFocusFilter === "near") return item.nearestKm <= 15
+      if (routeFocusFilter === "near") return item.nearestKm <= mapRadiusKm
       if (routeFocusFilter === "late") return item.totalStops > 0 && item.ratio < 0.45
       if (routeFocusFilter === "unassigned") return item.hasUnassigned
       return true
@@ -299,7 +396,7 @@ export function RouteList() {
     })
 
     return sorted.map(item => item.route)
-  }, [filteredRoutes, routeFocusFilter, routeSort])
+  }, [filteredRoutes, routeFocusFilter, routeSort, mapStartingPoint, mapRadiusKm])
 
   const routeInsights = useMemo(() => {
     const entries = displayRoutes.map(route => {
@@ -308,14 +405,14 @@ export function RouteList() {
       const inactiveStops = Math.max(totalStops - activeStops, 0)
       const progress = totalStops > 0 ? Math.round((activeStops / totalStops) * 100) : 0
       const nearestKm = route.deliveryPoints.length > 0
-        ? Math.min(...route.deliveryPoints.map(p => haversineKm(DEFAULT_MAP_CENTER.lat, DEFAULT_MAP_CENTER.lng, p.latitude, p.longitude)))
+        ? Math.min(...route.deliveryPoints.map(p => haversineKm(mapStartingPoint.lat, mapStartingPoint.lng, p.latitude, p.longitude)))
         : Number.POSITIVE_INFINITY
       const etaMinutes = (totalStops * 7) + (inactiveStops * 4)
       const status = progress >= 75 ? 'On Track' : progress >= 45 ? 'Watch' : 'High Priority'
       return [route.id, { totalStops, activeStops, inactiveStops, progress, nearestKm, etaMinutes, status }] as const
     })
     return new Map(entries)
-  }, [displayRoutes])
+  }, [displayRoutes, mapStartingPoint])
 
   const routeStats = useMemo(() => {
     const allPoints = displayRoutes.flatMap(r => r.deliveryPoints)
@@ -454,6 +551,7 @@ export function RouteList() {
     setDraftRowOrder(buildRowEntries(routes.find(r => r.id === routeId)?.deliveryPoints || []))
     setDraftSort(activeSortConfig)
     setSettingsMenu(dialogView === 'map' ? 'map' : 'column')
+    setMapSettingsTab('map')
     setSortingTab('example')
     setSettingsOpen(true)
   }
@@ -466,21 +564,72 @@ export function RouteList() {
       isFromAnotherRoute: false,
     }))
 
-    if (!mapIncludeOtherRoutes) return primaryPoints
+    const allPoints = !mapIncludeOtherRoutes
+      ? primaryPoints
+      : [
+          ...primaryPoints,
+          ...routes
+            .filter(route => route.id !== currentRouteId)
+            .flatMap(route =>
+              route.deliveryPoints.map(point => ({
+                ...point,
+                markerId: `${route.id}:${point.code}`,
+                routeName: route.name,
+                isFromAnotherRoute: true,
+              }))
+            ),
+        ]
 
-    const otherPoints = routes
-      .filter(route => route.id !== currentRouteId)
-      .flatMap(route =>
-        route.deliveryPoints.map(point => ({
-          ...point,
-          markerId: `${route.id}:${point.code}`,
-          routeName: route.name,
-          isFromAnotherRoute: true,
-        }))
-      )
+    return allPoints.filter((point) => {
+      if (!mapDeliveryFilters[point.delivery]) return false
+      if (mapOnlyActivePoints && !isDeliveryActive(point.delivery)) return false
+      if (mapRestrictByRadius) {
+        const distance = haversineKm(mapStartingPoint.lat, mapStartingPoint.lng, point.latitude, point.longitude)
+        if (distance > mapRadiusKm) return false
+      }
+      return true
+    })
+  }, [
+    deliveryPoints,
+    currentRoute?.name,
+    currentRouteId,
+    mapIncludeOtherRoutes,
+    routes,
+    mapDeliveryFilters,
+    mapOnlyActivePoints,
+    mapRestrictByRadius,
+    mapStartingPoint,
+    mapRadiusKm,
+  ])
 
-    return [...primaryPoints, ...otherPoints]
-  }, [deliveryPoints, currentRoute?.name, currentRouteId, mapIncludeOtherRoutes, routes])
+  useEffect(() => {
+    try {
+      localStorage.setItem(MAP_SETTINGS_STORAGE_KEY, JSON.stringify({
+        markerStyle: mapMarkerStyle,
+        includeOtherRoutes: mapIncludeOtherRoutes,
+        colorByRoute: mapColorByRoute,
+        showRouteLines: mapShowRouteLines,
+        startLat: mapStartingPoint.lat,
+        startLng: mapStartingPoint.lng,
+        radiusKm: mapRadiusKm,
+        onlyActivePoints: mapOnlyActivePoints,
+        restrictByRadius: mapRestrictByRadius,
+        deliveryFilters: mapDeliveryFilters,
+      } satisfies StoredMapSettings))
+    } catch {
+      // Non-blocking: keep working even if storage is unavailable.
+    }
+  }, [
+    mapMarkerStyle,
+    mapIncludeOtherRoutes,
+    mapColorByRoute,
+    mapShowRouteLines,
+    mapStartingPoint,
+    mapRadiusKm,
+    mapOnlyActivePoints,
+    mapRestrictByRadius,
+    mapDeliveryFilters,
+  ])
 
   // Column helpers
   const moveDraftCol = (idx: number, dir: -1 | 1) => {
@@ -577,14 +726,14 @@ export function RouteList() {
     if (!isCustomSort) {
       // Direct distance mode: each row shows straight-line from origin
       for (const point of sortedDeliveryPoints) {
-        const direct = haversineKm(DEFAULT_MAP_CENTER.lat, DEFAULT_MAP_CENTER.lng, point.latitude, point.longitude)
+        const direct = haversineKm(mapStartingPoint.lat, mapStartingPoint.lng, point.latitude, point.longitude)
         result.push({ display: direct, segment: direct })
       }
     } else {
       // Cumulative chain mode: origin → Row1 → Row2 → Row3 …
       let cumulative = 0
-      let prevLat = DEFAULT_MAP_CENTER.lat
-      let prevLng = DEFAULT_MAP_CENTER.lng
+      let prevLat = mapStartingPoint.lat
+      let prevLng = mapStartingPoint.lng
       for (const point of sortedDeliveryPoints) {
         const segment = haversineKm(prevLat, prevLng, point.latitude, point.longitude)
         cumulative += segment
@@ -594,7 +743,7 @@ export function RouteList() {
       }
     }
     return result
-  }, [sortedDeliveryPoints, isCustomSort])
+  }, [sortedDeliveryPoints, isCustomSort, mapStartingPoint])
 
   const startEdit = (rowCode: string, field: string, currentValue: string | number) => {
     if (!isEditMode) return
@@ -1162,7 +1311,7 @@ export function RouteList() {
                 <button
                   className="p-2.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                   title="List"
-                  onClick={() => { setCurrentRouteId(route.id); setDialogView('table'); setDetailDialogOpen(true) }}
+                  onClick={() => { setCurrentRouteId(route.id); setDialogView(defaultDialogView); setDetailDialogOpen(true) }}
                 ><List className="size-5" /></button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -1195,7 +1344,7 @@ export function RouteList() {
             </div>
                 {isActiveRoute && (
                   <>
-                  <Dialog open={detailDialogOpen} onOpenChange={(open) => { if (!open) { setDetailDialogOpen(false); setDetailFullscreen(false); setDialogView('table'); setSelectedRows([]) } }}>
+                  <Dialog open={detailDialogOpen} onOpenChange={(open) => { if (!open) { setDetailDialogOpen(false); setDetailFullscreen(false); setDialogView(defaultDialogView); setSelectedRows([]) } }}>
                   <DialogContent
                     className="p-0 gap-0 flex flex-col overflow-hidden transition-[width,height,max-width,border-radius] duration-300 ease-in-out"
                     style={detailFullscreen
@@ -1248,6 +1397,9 @@ export function RouteList() {
                             deliveryPoints={mapDeliveryPoints}
                             scrollZoom={true}
                             markerStyle={mapMarkerStyle}
+                            colorByRoute={mapColorByRoute}
+                            showRouteLines={mapShowRouteLines}
+                            startPoint={mapStartingPoint}
                           />
                         </div>
                       ) : (
@@ -1965,7 +2117,14 @@ export function RouteList() {
               {previewRoute ? (
                 <>
                   <div className="h-[320px]">
-                    <DeliveryMap deliveryPoints={previewRoute.deliveryPoints} scrollZoom={false} />
+                    <DeliveryMap
+                      deliveryPoints={previewRoute.deliveryPoints}
+                      scrollZoom={false}
+                      markerStyle={mapMarkerStyle}
+                      colorByRoute={mapColorByRoute}
+                      showRouteLines={mapShowRouteLines}
+                      startPoint={mapStartingPoint}
+                    />
                   </div>
                   <div className="p-4 border-t border-border/60 text-xs text-muted-foreground flex items-center justify-between">
                     <span>{previewRoute.code}</span>
@@ -2365,45 +2524,266 @@ export function RouteList() {
             {/* ── MAP CUSTOMIZE ── */}
             {settingsMenu === 'map' && (
               <div className="h-full overflow-y-auto p-6 space-y-5">
-                <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-semibold">Show Markers From Other Routes</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Display markers from other route cards while keeping current route markers highlighted.
-                      </p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={mapIncludeOtherRoutes}
-                      onChange={(e) => setMapIncludeOtherRoutes(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 cursor-pointer accent-primary"
-                    />
-                  </div>
+                <div className="flex gap-1.5 p-1.5 bg-muted rounded-xl">
+                  {([
+                    { id: 'map', label: 'Map' },
+                    { id: 'accessibility', label: 'Accessibility' },
+                    { id: 'filter', label: 'Filter' },
+                  ] as const).map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setMapSettingsTab(tab.id)}
+                      className={`flex-1 py-2 px-3 text-sm rounded-lg font-semibold transition-colors ${
+                        mapSettingsTab === tab.id
+                          ? 'bg-background shadow-sm text-foreground'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
                 </div>
 
-                <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
-                  <p className="text-sm font-semibold">Marker Design</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    {([
-                      { value: 'dot', label: 'Dot' },
-                      { value: 'ring', label: 'Ring' },
-                      { value: 'diamond', label: 'Diamond' },
-                    ] as const).map(opt => (
-                      <button
-                        key={opt.value}
-                        onClick={() => setMapMarkerStyle(opt.value)}
-                        className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                          mapMarkerStyle === opt.value
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border bg-background hover:bg-muted'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {mapSettingsTab === 'map' && (
+                  <>
+                    <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                      <p className="text-sm font-semibold">Default View Mode</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {([
+                          { value: 'table', label: 'Table' },
+                          { value: 'map', label: 'Map' },
+                        ] as const).map(opt => (
+                          <button
+                            key={opt.value}
+                            onClick={() => {
+                              setDefaultDialogView(opt.value)
+                              try { localStorage.setItem('fcalendar_default_route_view', opt.value) } catch {}
+                            }}
+                            className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                              defaultDialogView === opt.value
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-border bg-background hover:bg-muted'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                      <p className="text-sm font-semibold">Marker Design</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                        {([
+                          { value: 'standard', label: 'Standard' },
+                          { value: 'dot', label: 'Dot' },
+                          { value: 'ring', label: 'Ring' },
+                          { value: 'diamond', label: 'Diamond' },
+                        ] as const).map(opt => (
+                          <button
+                            key={opt.value}
+                            onClick={() => setMapMarkerStyle(opt.value)}
+                            className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                              mapMarkerStyle === opt.value
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-border bg-background hover:bg-muted'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-semibold">Color Marker By Route</p>
+                          <p className="text-xs text-muted-foreground mt-1">Use one unique color for each route.</p>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={mapColorByRoute}
+                          onChange={(e) => setMapColorByRoute(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 cursor-pointer accent-primary"
+                        />
+                      </div>
+
+                      <div className="h-px bg-border/60" />
+
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-semibold">Show Marker Lines</p>
+                          <p className="text-xs text-muted-foreground mt-1">Draw connecting line between markers for each route.</p>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={mapShowRouteLines}
+                          onChange={(e) => setMapShowRouteLines(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 cursor-pointer accent-primary"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {mapSettingsTab === 'accessibility' && (
+                  <>
+                    <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                      <p className="text-sm font-semibold">Starting Point</p>
+                      <p className="text-xs text-muted-foreground">Distance and Near Me filter will be calculated from this coordinate.</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground">Latitude</label>
+                          <Input
+                            type="number"
+                            step="0.000001"
+                            value={mapStartingPoint.lat}
+                            onChange={(e) => {
+                              const raw = Number.parseFloat(e.target.value)
+                              if (!Number.isNaN(raw)) {
+                                setMapStartingPoint(prev => ({ ...prev, lat: sanitizeLat(raw) }))
+                              }
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground">Longitude</label>
+                          <Input
+                            type="number"
+                            step="0.000001"
+                            value={mapStartingPoint.lng}
+                            onChange={(e) => {
+                              const raw = Number.parseFloat(e.target.value)
+                              if (!Number.isNaN(raw)) {
+                                setMapStartingPoint(prev => ({ ...prev, lng: sanitizeLng(raw) }))
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                      <p className="text-sm font-semibold">Radius From Starting Point</p>
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        {[5, 10, 15, 25, 50, 100].map((km) => (
+                          <button
+                            key={km}
+                            onClick={() => setMapRadiusKm(km)}
+                            className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                              mapRadiusKm === km
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-border bg-background hover:bg-muted'
+                            }`}
+                          >
+                            {km} Km
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={1}
+                          max={200}
+                          step={1}
+                          value={mapRadiusKm}
+                          onChange={(e) => {
+                            const raw = Number.parseInt(e.target.value, 10)
+                            if (!Number.isNaN(raw)) setMapRadiusKm(clampRadiusKm(raw))
+                          }}
+                          className="max-w-32"
+                        />
+                        <span className="text-xs text-muted-foreground">Used by Near Me and optional radius filter.</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {mapSettingsTab === 'filter' && (
+                  <>
+                    <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-semibold">Show All Routes</p>
+                          <p className="text-xs text-muted-foreground mt-1">Display markers from all routes, not only current route.</p>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={mapIncludeOtherRoutes}
+                          onChange={(e) => setMapIncludeOtherRoutes(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 cursor-pointer accent-primary"
+                        />
+                      </div>
+
+                      <div className="h-px bg-border/60" />
+
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-semibold">Only Active Stops</p>
+                          <p className="text-xs text-muted-foreground mt-1">Hide inactive delivery cycle markers for today.</p>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={mapOnlyActivePoints}
+                          onChange={(e) => setMapOnlyActivePoints(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 cursor-pointer accent-primary"
+                        />
+                      </div>
+
+                      <div className="h-px bg-border/60" />
+
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-semibold">Filter By Radius ({mapRadiusKm} Km)</p>
+                          <p className="text-xs text-muted-foreground mt-1">Only show markers within selected radius from starting point.</p>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={mapRestrictByRadius}
+                          onChange={(e) => setMapRestrictByRadius(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 cursor-pointer accent-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold">Delivery Type Filter</p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setMapDeliveryFilters({ ...DEFAULT_DELIVERY_FILTERS })}
+                            className="text-xs text-primary hover:underline"
+                          >
+                            Show All
+                          </button>
+                          <button
+                            onClick={() => setMapDeliveryFilters({ Daily: false, Weekday: false, "Alt 1": false, "Alt 2": false })}
+                            className="text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {(Object.keys(DEFAULT_DELIVERY_FILTERS) as DeliveryType[]).map((kind) => (
+                          <button
+                            key={kind}
+                            onClick={() => setMapDeliveryFilters(prev => ({ ...prev, [kind]: !prev[kind] }))}
+                            className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                              mapDeliveryFilters[kind]
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-border bg-background text-muted-foreground hover:bg-muted'
+                            }`}
+                          >
+                            {kind}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
             </div>
@@ -2500,8 +2880,18 @@ export function RouteList() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
+                    setDefaultDialogView('table')
+                    try { localStorage.setItem('fcalendar_default_route_view', 'table') } catch {}
                     setMapIncludeOtherRoutes(false)
-                    setMapMarkerStyle('dot')
+                    setMapMarkerStyle('standard')
+                    setMapColorByRoute(false)
+                    setMapShowRouteLines(false)
+                    setMapStartingPoint({ ...DEFAULT_MAP_CENTER })
+                    setMapRadiusKm(15)
+                    setMapOnlyActivePoints(false)
+                    setMapRestrictByRadius(false)
+                    setMapDeliveryFilters({ ...DEFAULT_DELIVERY_FILTERS })
+                    setMapSettingsTab('map')
                   }}
                 >
                   Reset Map Settings

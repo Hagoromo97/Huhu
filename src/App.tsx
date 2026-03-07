@@ -445,25 +445,23 @@ function AppContent() {
           </Breadcrumb>
 
           {currentPage === "rooster" && (
-            <div className="flex items-center gap-1 rounded-lg border border-border/60 overflow-hidden bg-muted/30 p-1 shrink-0">
-              {(["week", "day"] as const).map((view) => (
-                <button
-                  key={view}
-                  onClick={() => setRoosterViewMode(view)}
-                  className={`h-8 px-3 text-xs font-semibold rounded-md capitalize transition-all ${
-                    roosterViewMode === view
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {view === "week" ? (
-                    <><CalendarDays className="size-3 inline mr-1" />Week</>
-                  ) : (
-                    <><Clock className="size-3 inline mr-1" />Day</>
-                  )}
-                </button>
-              ))}
-            </div>
+            <button
+              onClick={() => setRoosterViewMode((prev) => (prev === "week" ? "day" : "week"))}
+              className="flex items-center gap-1.5 shrink-0 h-8 px-3 rounded-lg border border-border bg-muted/40 hover:bg-muted/70 text-xs font-semibold text-foreground transition-all duration-150 shadow-sm"
+              aria-label="Toggle rooster view mode"
+            >
+              {roosterViewMode === "week" ? (
+                <>
+                  <CalendarDays className="size-3 shrink-0" />
+                  Week
+                </>
+              ) : (
+                <>
+                  <Clock className="size-3 shrink-0" />
+                  Day
+                </>
+              )}
+            </button>
           )}
 
           {/* Calendar view cycle button — single multi-state button */}

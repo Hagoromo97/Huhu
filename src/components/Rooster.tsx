@@ -532,30 +532,8 @@ export function Rooster({
 
       {/* ── Top bar ─────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 items-center gap-3 px-4 py-4 border-b border-border/60 shrink-0 bg-background/80 backdrop-blur-sm sm:px-6 md:grid-cols-[1fr_auto_1fr]">
-        {/* Left controls: nav */}
-        <div className="flex flex-wrap items-center gap-2 md:justify-start">
-          <button
-            onClick={() => navigate(-1)}
-            className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Previous"
-          >
-            <ChevronLeft className="size-4" />
-          </button>
-          <button
-            onClick={goToday}
-            className="h-9 px-4 text-xs font-semibold rounded-lg border border-border/60 bg-muted/40 hover:bg-muted/70 transition-colors"
-          >
-            Today
-          </button>
-          <button
-            onClick={() => navigate(1)}
-            className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Next"
-          >
-            <ChevronRight className="size-4" />
-          </button>
-
-        </div>
+        {/* Left spacer for balanced center title */}
+        <div className="hidden md:block" />
 
         {/* Center label */}
         <h2 className="text-base font-bold text-center">
@@ -584,6 +562,27 @@ export function Rooster({
             Add Staff
           </button>
           )}
+
+          <button
+            onClick={() => navigate(-1)}
+            className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Previous"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+          <button
+            onClick={goToday}
+            className="h-9 px-3 text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Today
+          </button>
+          <button
+            onClick={() => navigate(1)}
+            className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Next"
+          >
+            <ChevronRight className="size-4" />
+          </button>
         </div>
       </div>
 
@@ -639,7 +638,7 @@ export function Rooster({
                             className={`flex items-center justify-center text-xs font-semibold border-r border-border/35 ${isToday ? "text-primary" : "text-muted-foreground"}`}
                             style={{ width: dayColWidth }}
                           >
-                            <span className={`inline-flex items-center justify-center rounded-full px-2 h-5 text-[10px] sm:px-2.5 sm:h-6 sm:text-[11px] ${isToday ? "bg-primary text-primary-foreground" : "bg-muted/60"}`}>
+                            <span className="inline-flex items-center justify-center px-2 h-5 text-[10px] sm:px-2.5 sm:h-6 sm:text-[11px]">
                               {date.getDate()} - {DAYS_SHORT[date.getDay()]}
                             </span>
                           </div>

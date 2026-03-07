@@ -290,7 +290,7 @@ export function FoodTracker() {
           </Button>
         </div>
 
-        <div className="relative mt-5 rounded-2xl bg-background/70 p-3 sm:p-4">
+        <div className="relative mt-5">
           <div className="mb-2.5 flex items-center justify-between">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Mini Calendar</p>
             <p className="text-xs font-medium text-foreground">{miniCalendar.label}</p>
