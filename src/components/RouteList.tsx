@@ -300,6 +300,19 @@ export function RouteList() {
     fetchRoutes()
   }, [fetchRoutes])
 
+  // Keep selected point synced with the latest route state while the info modal is open.
+  useEffect(() => {
+    if (!infoModalOpen || !selectedPoint) return
+    const latestPoint = routes
+      .find(route => route.id === currentRouteId)
+      ?.deliveryPoints.find(point => point.code === selectedPoint.code)
+    if (!latestPoint) return
+    setSelectedPoint(prev => {
+      if (!prev) return prev
+      return JSON.stringify(prev) === JSON.stringify(latestPoint) ? prev : latestPoint
+    })
+  }, [routes, currentRouteId, infoModalOpen, selectedPoint])
+
   // Listen for external open-route events (e.g. from pinned route on home page)
   // Check after routes finish loading so the dialog can find the route
   useEffect(() => {

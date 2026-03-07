@@ -69,7 +69,6 @@ export function RowInfoModal({ open, onOpenChange, point, isEditMode, onSave }: 
   const [avatarUrlInput, setAvatarUrlInput] = useState("")
   const [avatarUploading, setAvatarUploading] = useState(false)
   const avatarFileRef = useRef<HTMLInputElement>(null)
-  const avatarGalleryRef = useRef<HTMLDivElement>(null)
   const avatarLGInstance = useRef<any>(null)
 
   useEffect(() => {
@@ -77,16 +76,37 @@ export function RowInfoModal({ open, onOpenChange, point, isEditMode, onSave }: 
       setDrafts(point.descriptions ?? [])
       setQrCodeImageUrl(point.qrCodeImageUrl ?? "")
       setQrCodeDestinationUrl(point.qrCodeDestinationUrl ?? "")
-      const imgs = point.avatarImages ?? (point.avatarImageUrl ? [point.avatarImageUrl] : [])
+      const rawAvatarImages = point.avatarImages as unknown
+      let parsedImages: string[] = []
+      if (Array.isArray(rawAvatarImages)) {
+        parsedImages = rawAvatarImages.filter((u): u is string => typeof u === "string" && u.trim() !== "")
+      } else if (typeof rawAvatarImages === "string") {
+        try {
+          const parsed = JSON.parse(rawAvatarImages)
+          if (Array.isArray(parsed)) {
+            parsedImages = parsed.filter((u): u is string => typeof u === "string" && u.trim() !== "")
+          }
+        } catch {
+          // Support legacy comma-separated strings.
+          parsedImages = rawAvatarImages
+            .split(",")
+            .map((u) => u.trim())
+            .filter((u) => u.length > 0)
+        }
+      }
+      const imgs = Array.from(new Set([
+        ...parsedImages,
+        ...(point.avatarImageUrl ? [point.avatarImageUrl] : []),
+      ]))
       setAvatarImages(imgs)
       setAvatarImageUrl(point.avatarImageUrl ?? (imgs[0] ?? ""))
       setIsEditing(false)
     }
   }, [open, point])
 
-  // Init lightGallery for avatar (view mode only)
+  // Init lightGallery for avatar preview (available in both view and edit mode)
   useEffect(() => {
-    if (!open || avatarImages.length === 0 || isEditMode) {
+    if (!open || avatarImages.length === 0) {
       if (avatarLGInstance.current) {
         avatarLGInstance.current.destroy()
         avatarLGInstance.current = null
@@ -95,19 +115,25 @@ export function RowInfoModal({ open, onOpenChange, point, isEditMode, onSave }: 
     }
     const init = async () => {
       await new Promise(r => setTimeout(r, 150))
-      if (!avatarGalleryRef.current) return
       const { default: lightGallery } = await import('lightgallery')
       const { default: lgZoom } = await import('lightgallery/plugins/zoom')
+      const { default: lgThumbnail } = await import('lightgallery/plugins/thumbnail')
       if (avatarLGInstance.current) {
         avatarLGInstance.current.destroy()
         avatarLGInstance.current = null
       }
-      const { default: lgThumbnail } = await import('lightgallery/plugins/thumbnail')
-      avatarLGInstance.current = lightGallery(avatarGalleryRef.current, {
+      const holder = document.createElement("div")
+      avatarLGInstance.current = lightGallery(holder, {
         plugins: [lgZoom, lgThumbnail],
         speed: 300,
         download: false,
         thumbnail: true,
+        dynamic: true,
+        dynamicEl: avatarImages.map((url) => ({
+          src: url,
+          thumb: url,
+          subHtml: `<h4>${point.name}</h4>`,
+        })),
       })
     }
     init()
@@ -117,12 +143,20 @@ export function RowInfoModal({ open, onOpenChange, point, isEditMode, onSave }: 
         avatarLGInstance.current = null
       }
     }
-  }, [open, avatarImages, isEditMode])
+  }, [open, avatarImages])
 
   const openAvatarGallery = () => {
     if (!avatarLGInstance.current || avatarImages.length === 0) return
     const idx = avatarImages.indexOf(avatarImageUrl)
     avatarLGInstance.current.openGallery(idx >= 0 ? idx : 0)
+  }
+
+  const openAvatarManager = () => {
+    setDialogImages([...avatarImages])
+    setDialogSelected(avatarImageUrl)
+    setAvatarUrlInput("")
+    setAvatarTab("url")
+    setShowAvatarDialog(true)
   }
 
   const uploadToImgBB = async (file: File): Promise<string> => {
@@ -224,51 +258,29 @@ export function RowInfoModal({ open, onOpenChange, point, isEditMode, onSave }: 
         {/* Header */}
         <DialogHeader className="px-5 pt-5 pb-4 border-b border-border bg-background">
           <div className="flex items-center gap-3">
-            {/* Avatar: multi-image gallery / camera-slash placeholder */}
-            {isEditMode ? (
+            {/* Avatar: click image to preview + slide, edit button shown in edit mode */}
+            <div className="relative shrink-0">
               <button
-                onClick={() => {
-                  setDialogImages([...avatarImages])
-                  setDialogSelected(avatarImageUrl)
-                  setAvatarUrlInput("")
-                  setAvatarTab("url")
-                  setShowAvatarDialog(true)
-                }}
-                className="w-11 h-11 rounded-full overflow-hidden shrink-0 shadow relative group focus:outline-none"
+                onClick={avatarImages.length > 0 ? openAvatarGallery : (isEditMode ? openAvatarManager : undefined)}
+                className={`w-11 h-11 rounded-full overflow-hidden shadow focus:outline-none ${avatarImages.length > 0 ? "cursor-zoom-in" : (isEditMode ? "cursor-pointer" : "cursor-default")}`}
               >
                 {avatarImageUrl ? (
                   <img src={avatarImageUrl} alt={point.name} className="w-full h-full object-cover" />
                 ) : (
                   <img src={noImageSrc} alt="No image" className="w-full h-full object-cover" />
                 )}
-                <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                  <Camera className="size-4 text-white" />
-                </div>
               </button>
-            ) : (
-              avatarImages.length > 0 ? (
-                <>
-                  {/* Hidden lightgallery container with all images */}
-                  <div ref={avatarGalleryRef} className="hidden">
-                    {avatarImages.map((url, i) => (
-                      <a key={i} href={url} data-sub-html={`<h4>${point.name}</h4>`}>
-                        <img src={url} alt={point.name} />
-                      </a>
-                    ))}
-                  </div>
-                  <button
-                    onClick={openAvatarGallery}
-                    className="w-11 h-11 rounded-full overflow-hidden shrink-0 shadow cursor-zoom-in focus:outline-none"
-                  >
-                    <img src={avatarImageUrl || avatarImages[0]} alt={point.name} className="w-full h-full object-cover" />
-                  </button>
-                </>
-              ) : (
-                <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 shadow">
-                  <img src={noImageSrc} alt="No image" className="w-full h-full object-cover" />
-                </div>
-              )
-            )}
+
+              {isEditMode && (
+                <button
+                  onClick={openAvatarManager}
+                  title="Manage avatar images"
+                  className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border border-border bg-background shadow flex items-center justify-center hover:bg-muted transition-colors"
+                >
+                  <Camera className="size-3" />
+                </button>
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1.5 mb-1">
                 <MapPin className="size-3" />

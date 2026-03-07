@@ -13,7 +13,7 @@ const FoodTracker = lazy(() => import("@/components/FoodTracker").then(m => ({ d
 import { EditModeProvider } from "@/contexts/EditModeContext"
 import { DeviceProvider } from "@/contexts/DeviceContext"
 import { Toaster } from "sonner"
-import { Home, Package, Settings2, Calendar as CalendarIcon, Images, ChevronDown, Truck, Pin, LayoutList, List, MapPin, ClipboardList, Users, CalendarDays, Clock } from "lucide-react"
+import { Home, Package, Settings2, Calendar as CalendarIcon, Images, ChevronDown, Truck, Pin, LayoutList, List, ClipboardList, Users, CalendarDays, Clock } from "lucide-react"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -70,7 +70,7 @@ function QuickActionCard({
   return (
     <button
       onClick={() => onNavigate(page)}
-      className="group flex flex-col items-start gap-2 rounded-xl p-3 sm:gap-2.5 sm:p-3.5 text-left border border-border bg-card hover:bg-muted/40 hover:border-border/80 active:scale-[0.97] transition-all duration-150"
+      className="group flex h-full flex-col items-start gap-2.5 rounded-xl p-3.5 sm:gap-3 sm:p-4 text-left border border-border/70 bg-card/80 shadow-[0_1px_0_0_hsl(var(--border)/0.45)] hover:bg-muted/50 hover:border-border active:scale-[0.98] transition-all duration-150"
     >
       <div className="flex items-center gap-2 min-w-0">
         <Icon className={`size-4 shrink-0 ${iconClass}`} />
@@ -84,7 +84,6 @@ function QuickActionCard({
 function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
   const [tableOpen, setTableOpen] = useState(true)
   const [tableExpanded, setTableExpanded] = useState(false)
-  const [legendOpen, setLegendOpen] = useState(false)
   // Mon=0 … Sun=6
   const todayIndex = (new Date().getDay() + 6) % 7
 
@@ -117,15 +116,13 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
       <div className="space-y-2.5 sm:space-y-3">
         <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-0.5">Quick Access</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3.5">
-          <QuickActionCard icon={CalendarIcon} label="Calendar" description="View monthly schedule" page="calendar" iconClass="text-blue-600 dark:text-blue-400" onNavigate={onNavigate} />
           <QuickActionCard icon={ClipboardList} label="Route List" description="Manage vending routes" page="route-list" iconClass="text-violet-600 dark:text-violet-400" onNavigate={onNavigate} />
-          <QuickActionCard icon={MapPin} label="Location" description="Delivery records" page="deliveries" iconClass="text-emerald-600 dark:text-emerald-400" onNavigate={onNavigate} />
           <QuickActionCard icon={Users} label="Rooster" description="Team schedule" page="rooster" iconClass="text-orange-600 dark:text-orange-400" onNavigate={onNavigate} />
-          <QuickActionCard icon={Images} label="Album" description="View all VM photos" page="gallery-album" iconClass="text-fuchsia-600 dark:text-fuchsia-400" onNavigate={onNavigate} />
+          <QuickActionCard icon={LayoutList} label="Plano VM" description="Planogram overview" page="plano-vm" iconClass="text-cyan-600 dark:text-cyan-400" onNavigate={onNavigate} />
         </div>
       </div>
 
-      <div className="mx-0.5 h-px bg-gradient-to-r from-transparent via-border/65 to-transparent" />
+      <div className="mx-0.5 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
 
       {/* Pinned Routes */}
       {pinnedRoutes.length > 0 && (
@@ -134,12 +131,12 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
             <Pin className="size-3" />
             Pinned Routes
           </div>
-          <div className="rounded-xl ring-1 ring-border/60 overflow-hidden shadow-sm bg-card">
+          <div className="rounded-xl ring-1 ring-border/60 overflow-hidden bg-card">
             {pinnedRoutes.map((r, i) => {
               const isKL  = (r.name + " " + r.code).toLowerCase().includes("kl")
               const isSel = (r.name + " " + r.code).toLowerCase().includes("sel")
               return (
-                <div key={r.id} className={`flex items-center gap-2.5 px-2.5 py-2.5 sm:gap-3 sm:px-3 ${i !== 0 ? "border-t border-border/40" : ""}`}>
+                <div key={r.id} className={`flex items-center gap-2.5 px-3 py-2.5 sm:gap-3 sm:px-3.5 sm:py-3 ${i !== 0 ? "border-t border-border/40" : ""}`}>
                   {/* Flag / icon */}
                   {isKL
                     ? <img src="/kl-flag.png" className="shrink-0 object-cover rounded shadow-sm ring-1 ring-black/10 dark:ring-white/10" style={{ width: 32, height: 20 }} alt="KL" />
@@ -182,10 +179,10 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Daily Color</p>
           <div className="h-px flex-1 bg-border/50" />
         </div>
-      <div className="rounded-2xl border border-border overflow-hidden shadow-sm">
+      <div className="rounded-2xl border border-border/70 overflow-hidden bg-card shadow-[0_1px_0_0_hsl(var(--border)/0.45)]">
         {/* Collapsible header */}
         <button
-          className="w-full grid grid-cols-4 bg-muted/45 text-xs font-semibold uppercase tracking-wide text-foreground/85 px-3 py-2.5 gap-1.5 sm:px-4 sm:py-3 sm:gap-2 hover:bg-muted/60 transition-colors text-left items-center"
+          className="w-full grid grid-cols-4 bg-muted/50 text-xs font-semibold uppercase tracking-wide text-foreground/85 px-3 py-2.5 gap-1.5 sm:px-4 sm:py-3 sm:gap-2 hover:bg-muted/65 transition-colors text-left items-center"
           onClick={() => setTableOpen(v => !v)}
         >
           <span className="flex items-center gap-1.5">
@@ -230,36 +227,28 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
             {tableExpanded ? "Show less" : "Show all days"}
           </button>
         )}
-      </div>
-      </div>
-
-      {/* Legend */}
-      <div className="rounded-2xl border border-border overflow-hidden shadow-sm">
-        <button
-          className="w-full flex items-center gap-1.5 bg-muted/60 text-xs font-semibold uppercase tracking-wide text-muted-foreground px-3 py-2.5 sm:px-4 sm:py-3 hover:bg-muted/80 transition-colors text-left"
-          onClick={() => setLegendOpen(v => !v)}
-        >
-          <ChevronDown className={`size-3.5 shrink-0 transition-transform duration-200 ${legendOpen ? "rotate-180" : ""}`} />
-          Color Legend
-        </button>
-        {legendOpen && (
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 p-3.5 sm:p-4 border-t border-border/60">
-            {[
-              { color: "#3B82F6", label: "Blue" },
-              { color: "#F97316", label: "Orange" },
-              { color: "#92400E", label: "Brown" },
-              { color: "#22C55E", label: "Green" },
-              { color: "#A855F7", label: "Purple" },
-              { color: "#EC4899", label: "Pink" },
-              { color: "#EAB308", label: "Yellow" },
-            ].map(({ color, label }) => (
-              <div key={label} className="flex items-center gap-2 text-sm text-muted-foreground">
-                <ColorDot color={color} />
-                <span>{label}</span>
-              </div>
-            ))}
+        {tableOpen && (
+          <div className="border-t border-border/60 p-3.5 sm:p-4">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">Color Expired</p>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
+              {[
+                { color: "#3B82F6", label: "Blue" },
+                { color: "#F97316", label: "Orange" },
+                { color: "#92400E", label: "Brown" },
+                { color: "#22C55E", label: "Green" },
+                { color: "#A855F7", label: "Purple" },
+                { color: "#EC4899", label: "Pink" },
+                { color: "#EAB308", label: "Yellow" },
+              ].map(({ color, label }) => (
+                <div key={label} className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <ColorDot color={color} />
+                  <span>{label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   )
