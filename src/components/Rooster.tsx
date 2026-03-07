@@ -520,9 +520,16 @@ export function Rooster({
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
-        <Loader2 className="size-5 animate-spin" />
-        <span className="text-sm">Loading roster…</span>
+      <div className="rooster-loading flex flex-1 items-center justify-center gap-2">
+        <Loader2 className="size-5 animate-spin text-primary/90" />
+        <span className="rooster-loading-text text-sm">
+          Loading roster
+          <span className="ml-0.5 inline-flex" aria-hidden="true">
+            <span className="rooster-loading-dot" style={{ animationDelay: "0s" }}>.</span>
+            <span className="rooster-loading-dot" style={{ animationDelay: "0.2s" }}>.</span>
+            <span className="rooster-loading-dot" style={{ animationDelay: "0.4s" }}>.</span>
+          </span>
+        </span>
       </div>
     )
   }
@@ -606,8 +613,7 @@ export function Rooster({
           <div className="min-w-max">
             <div className="grid" style={{ gridTemplateColumns: `220px ${gridRightWidth}px` }}>
               <div
-                className="sticky top-0 left-0 z-30 bg-background/95 backdrop-blur-sm border-b border-r border-border/70 px-5 py-4 flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap shadow-[2px_0_6px_-2px_rgba(0,0,0,0.12)]"
-                style={{ backgroundColor: "hsl(var(--background))" }}
+                className="sticky top-0 left-0 z-30 bg-muted/[0.18] backdrop-blur-sm border-b border-r border-border/70 px-5 py-4 flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap shadow-[2px_0_6px_-2px_rgba(0,0,0,0.12)]"
               >
                 <Users className="size-4 shrink-0" />
                 Staff
@@ -687,8 +693,7 @@ export function Rooster({
                 return (
                   <div key={resource.id} style={{ display: "contents" }}>
                     <div
-                      className="sticky left-0 z-10 bg-background/95 backdrop-blur-sm border-b border-r border-border/60 px-4 py-3 flex flex-col justify-center gap-1.5 shadow-[2px_0_6px_-2px_rgba(0,0,0,0.10)]"
-                      style={{ backgroundColor: "hsl(var(--background))" }}
+                      className="sticky left-0 z-10 bg-muted/[0.14] backdrop-blur-sm border-b border-r border-border/60 px-4 py-3 flex flex-col justify-center gap-1.5 shadow-[2px_0_6px_-2px_rgba(0,0,0,0.10)]"
                     >
                       <div className="flex items-center gap-2.5">
                         <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: resource.color }} />

@@ -37,6 +37,48 @@
   animation: route-preview-pulse 2.8s ease-in-out infinite;
 }
 
+@keyframes rooster-loading-glow {
+  0%,
+  100% {
+    color: hsl(var(--foreground) / 0.78);
+    text-shadow: 0 0 0 transparent;
+  }
+  50% {
+    color: hsl(var(--primary));
+    text-shadow: 0 0 12px hsl(var(--primary) / 0.45);
+  }
+}
+
+@keyframes rooster-loading-dot {
+  0%,
+  20%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+.rooster-loading {
+  color: hsl(var(--foreground));
+}
+
+.rooster-loading-text {
+  animation: rooster-loading-glow 1.8s ease-in-out infinite;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.rooster-loading-dot {
+  display: inline-block;
+  min-width: 0.38ch;
+  text-align: center;
+  animation: rooster-loading-dot 1.2s ease-in-out infinite;
+}
+
 /* ── PrimeReact Toast — full theme override ──────────────────────────────── */
 .p-toast {
   width: 22rem;
@@ -231,6 +273,11 @@ html {
    */
   --text-size-base: 16px;   /* fallback; overridden by useTheme */
   --app-font-scale: 1;       /* overridden by DeviceProvider */
+  --device-vw: 1280px;
+  --device-vh: 800px;
+  --device-scale: 1;
+  --app-content-max: min(1120px, calc(var(--device-vw) - 2rem));
+  --app-content-narrow: min(860px, calc(var(--device-vw) - 1.5rem));
   font-size: clamp(
     13px,
     calc(var(--text-size-base) * var(--app-font-scale)),
@@ -253,6 +300,23 @@ html {
   --sp-md:  clamp(0.75rem, 1.8vw, 1rem);
   --sp-lg:  clamp(1rem,    2.5vw, 1.5rem);
   --sp-xl:  clamp(1.5rem,  3.5vw, 2rem);
+  --content-pad-x: clamp(0.8rem, 2.4vw, 1.65rem);
+  --content-pad-y: clamp(0.75rem, 2.2vh, 1.5rem);
+}
+
+html[data-density="compact"] {
+  --content-pad-x: clamp(0.75rem, 4vw, 1.1rem);
+  --content-pad-y: clamp(0.6rem, 2vh, 1rem);
+}
+
+html[data-density="comfortable"] {
+  --content-pad-x: clamp(0.9rem, 2.6vw, 1.4rem);
+  --content-pad-y: clamp(0.75rem, 2.1vh, 1.25rem);
+}
+
+html[data-density="spacious"] {
+  --content-pad-x: clamp(1.1rem, 2.2vw, 1.85rem);
+  --content-pad-y: clamp(0.9rem, 1.9vh, 1.45rem);
 }
 
 body {
@@ -262,6 +326,10 @@ body {
   overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  background:
+    radial-gradient(80rem 45rem at -8% -15%, hsl(var(--primary) / 0.09), transparent 60%),
+    radial-gradient(65rem 35rem at 115% -20%, hsl(var(--chart-2) / 0.09), transparent 62%),
+    linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)) 45%, color-mix(in oklab, hsl(var(--background)) 94%, hsl(var(--primary) / 0.08)) 100%);
 }
 
 #root {
@@ -360,6 +428,8 @@ body {
     --sidebar-accent-foreground: hsl(202 24% 9%);
     --sidebar-border: hsl(202 18% 88%);
     --sidebar-ring: hsl(203 89% 53%);
+    --hero-glow: hsl(203 88% 58% / 0.18);
+    --hero-glow-2: hsl(177 65% 48% / 0.14);
 }
 
 .dark {
@@ -398,6 +468,8 @@ body {
     --sidebar-accent-foreground: hsl(202 33% 90%);
     --sidebar-border: hsl(202 14% 18%);
     --sidebar-ring: hsl(203 89% 53%);
+    --hero-glow: hsl(203 92% 62% / 0.2);
+    --hero-glow-2: hsl(172 80% 45% / 0.18);
 }
 
 /* ── Bubblegum Theme ────────────────────────────────────────── */
@@ -906,9 +978,44 @@ body {
 @layer components {
   .glass-card {
     @apply backdrop-blur-xl bg-card/80 border border-card-border/50;
+    box-shadow: 0 16px 34px -30px hsl(var(--foreground) / 0.6);
   }
   .glass-header {
-    @apply backdrop-blur-md bg-background/90 border-b border-border/50;
+    @apply backdrop-blur-md bg-background/85 border-b border-border/55;
+    background-image: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.06), transparent);
+  }
+
+  .app-surface {
+    width: min(100%, var(--app-content-max));
+    margin-inline: auto;
+    padding-inline: var(--content-pad-x);
+    padding-block: var(--content-pad-y);
+  }
+
+  .app-surface-narrow {
+    width: min(100%, var(--app-content-narrow));
+    margin-inline: auto;
+    padding-inline: var(--content-pad-x);
+    padding-block: var(--content-pad-y);
+  }
+
+  .hero-panel {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid hsl(var(--border) / 0.6);
+    background:
+      radial-gradient(120% 120% at 0% 0%, var(--hero-glow), transparent 55%),
+      radial-gradient(95% 95% at 100% 0%, var(--hero-glow-2), transparent 60%),
+      hsl(var(--card) / 0.78);
+    backdrop-filter: blur(10px);
+  }
+
+  .hero-panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(140deg, transparent 35%, hsl(var(--primary) / 0.08) 100%);
+    pointer-events: none;
   }
 }
 
@@ -988,6 +1095,12 @@ body {
   }
   [data-device="mobile"] .page-pad {
     padding: var(--sp-sm) var(--sp-md);
+  }
+
+  .grid-auto-responsive {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+    gap: clamp(0.55rem, 1.5vw, 1rem);
   }
 }
 
