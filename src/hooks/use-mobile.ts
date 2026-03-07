@@ -11,17 +11,30 @@ function getDeviceType(width: number): DeviceType {
   return "desktop"
 }
 
+function getViewportWidth() {
+  if (typeof window === "undefined") return TABLET_BREAKPOINT
+  return window.visualViewport?.width ?? window.innerWidth
+}
+
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
 
   React.useEffect(() => {
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
     const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+      setIsMobile(getViewportWidth() < MOBILE_BREAKPOINT)
     }
+
+    onChange()
     mql.addEventListener("change", onChange)
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    return () => mql.removeEventListener("change", onChange)
+    window.addEventListener("orientationchange", onChange)
+    window.visualViewport?.addEventListener("resize", onChange)
+
+    return () => {
+      mql.removeEventListener("change", onChange)
+      window.removeEventListener("orientationchange", onChange)
+      window.visualViewport?.removeEventListener("resize", onChange)
+    }
   }, [])
 
   return !!isMobile
@@ -29,14 +42,21 @@ export function useIsMobile() {
 
 export function useDeviceType(): DeviceType {
   const [device, setDevice] = React.useState<DeviceType>(() =>
-    typeof window !== "undefined" ? getDeviceType(window.innerWidth) : "desktop"
+    typeof window !== "undefined" ? getDeviceType(getViewportWidth()) : "desktop"
   )
 
   React.useEffect(() => {
-    const update = () => setDevice(getDeviceType(window.innerWidth))
+    const update = () => setDevice(getDeviceType(getViewportWidth()))
     window.addEventListener("resize", update)
+    window.addEventListener("orientationchange", update)
+    window.visualViewport?.addEventListener("resize", update)
     update()
-    return () => window.removeEventListener("resize", update)
+
+    return () => {
+      window.removeEventListener("resize", update)
+      window.removeEventListener("orientationchange", update)
+      window.visualViewport?.removeEventListener("resize", update)
+    }
   }, [])
 
   return device

@@ -70,13 +70,13 @@ function QuickActionCard({
   return (
     <button
       onClick={() => onNavigate(page)}
-      className="group flex h-full flex-col items-start gap-2.5 rounded-xl p-3.5 sm:gap-3 sm:p-4 text-left border border-border/70 bg-card/80 shadow-[0_1px_0_0_hsl(var(--border)/0.45)] hover:bg-muted/50 hover:border-border active:scale-[0.98] transition-all duration-150"
+      className="group relative flex h-full flex-col items-start gap-2.5 rounded-2xl p-3.5 sm:gap-3 sm:p-4 text-left border border-border/65 bg-card/75 shadow-[0_16px_32px_-28px_hsl(var(--foreground)/0.5)] hover:bg-card/95 hover:border-primary/35 hover:shadow-[0_16px_34px_-24px_hsl(var(--primary)/0.35)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-all duration-200"
     >
       <div className="flex items-center gap-2 min-w-0">
-        <Icon className={`size-4 shrink-0 ${iconClass}`} />
+        <Icon className={`size-[18px] shrink-0 ${iconClass}`} />
         <p className="text-sm font-semibold text-foreground tracking-tight leading-snug truncate">{label}</p>
       </div>
-      <p className="text-xs text-muted-foreground leading-snug">{description}</p>
+      <p className="text-xs text-muted-foreground leading-snug text-balance">{description}</p>
     </button>
   )
 }
@@ -105,20 +105,20 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
   }, [])
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-3.5 sm:p-4 md:gap-7 md:p-8 max-w-3xl mx-auto w-full overflow-y-auto" style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}>
+    <div className="app-surface-narrow flex flex-1 flex-col gap-6 md:gap-7 overflow-y-auto" style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}>
       {/* Welcome */}
-      <div className="pt-1 text-center">
-        <h1 className="text-[clamp(0.9375rem,3vw,1.125rem)] font-bold text-foreground">Welcome to FCalendar</h1>
-        <p className="text-fluid-sm page-subheader text-muted-foreground mt-1">Daily color guide for stock operations.</p>
+      <div className="hero-panel rounded-3xl px-4 py-4 sm:px-5 sm:py-5 text-center shadow-[0_20px_40px_-34px_hsl(var(--foreground)/0.65)]">
+        <h1 className="text-[clamp(1rem,3.1vw,1.25rem)] font-bold tracking-tight text-foreground">Welcome to FCalendar</h1>
+        <p className="text-fluid-sm page-subheader text-muted-foreground mt-1.5">Daily color guide for stock operations.</p>
       </div>
 
       {/* Quick Access */}
       <div className="space-y-2.5 sm:space-y-3">
         <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-0.5">Quick Access</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3.5">
-          <QuickActionCard icon={ClipboardList} label="Route List" description="Manage vending routes" page="route-list" iconClass="text-violet-600 dark:text-violet-400" onNavigate={onNavigate} />
+        <div className="grid-auto-responsive sm:grid-cols-3">
+          <QuickActionCard icon={ClipboardList} label="Route List" description="Manage vending routes" page="route-list" iconClass="text-blue-600 dark:text-blue-400" onNavigate={onNavigate} />
           <QuickActionCard icon={Users} label="Rooster" description="Team schedule" page="rooster" iconClass="text-orange-600 dark:text-orange-400" onNavigate={onNavigate} />
-          <QuickActionCard icon={LayoutList} label="Plano VM" description="Planogram overview" page="plano-vm" iconClass="text-cyan-600 dark:text-cyan-400" onNavigate={onNavigate} />
+          <QuickActionCard icon={LayoutList} label="Plano VM" description="Planogram overview" page="plano-vm" iconClass="text-emerald-600 dark:text-emerald-400" onNavigate={onNavigate} />
         </div>
       </div>
 
@@ -131,7 +131,7 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
             <Pin className="size-3" />
             Pinned Routes
           </div>
-          <div className="rounded-xl ring-1 ring-border/60 overflow-hidden bg-card">
+          <div className="rounded-2xl ring-1 ring-border/60 overflow-hidden bg-card/90 shadow-[0_16px_32px_-28px_hsl(var(--foreground)/0.5)]">
             {pinnedRoutes.map((r, i) => {
               const isKL  = (r.name + " " + r.code).toLowerCase().includes("kl")
               const isSel = (r.name + " " + r.code).toLowerCase().includes("sel")
@@ -179,7 +179,7 @@ function HomePage({ onNavigate }: { onNavigate: (page: string) => void }) {
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Daily Color</p>
           <div className="h-px flex-1 bg-border/50" />
         </div>
-      <div className="rounded-2xl border border-border/70 overflow-hidden bg-card shadow-[0_1px_0_0_hsl(var(--border)/0.45)]">
+      <div className="rounded-2xl border border-border/70 overflow-hidden bg-card/90 shadow-[0_20px_36px_-32px_hsl(var(--foreground)/0.55)]">
         {/* Collapsible header */}
         <button
           className="w-full grid grid-cols-4 bg-muted/50 text-xs font-semibold uppercase tracking-wide text-foreground/85 px-3 py-2.5 gap-1.5 sm:px-4 sm:py-3 sm:gap-2 hover:bg-muted/65 transition-colors text-left items-center"
@@ -279,7 +279,7 @@ function AppContent() {
         return <RouteList />
       case "deliveries":
         return (
-          <div className="flex flex-col flex-1 min-h-0 gap-4 p-4 md:p-6">
+          <div className="app-surface flex flex-col flex-1 min-h-0 gap-4">
             <div className="shrink-0">
               <h1 className="text-fluid-xl page-header font-bold text-foreground">Location</h1>
               <p className="text-fluid-sm page-subheader text-muted-foreground mt-1">View and manage delivery records.</p>
@@ -478,7 +478,7 @@ function AppContent() {
           })()}
 
         </header>
-        <Suspense fallback={<div className="flex flex-1 items-center justify-center p-8 text-muted-foreground">Loading…</div>}>
+        <Suspense fallback={<div className="app-surface flex flex-1 items-center justify-center p-8 text-muted-foreground">Loading…</div>}>
           <div className={`flex flex-col flex-1 min-h-0 ${isTransitioning ? "page-fade-out" : "page-fade-in animate-in slide-in-from-bottom-4"}`}>
             {renderContent()}
           </div>

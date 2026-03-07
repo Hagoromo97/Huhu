@@ -11,6 +11,17 @@ interface DeviceContextValue {
   fontScale: number
 }
 
+function getViewportMetrics() {
+  const viewport = window.visualViewport
+  const width = viewport?.width ?? window.innerWidth
+  const height = viewport?.height ?? window.innerHeight
+  return {
+    width: Math.round(width),
+    height: Math.round(height),
+    scale: viewport?.scale ?? 1,
+  }
+}
+
 const DeviceContext = React.createContext<DeviceContextValue>({
   device: "desktop",
   isMobile: false,
@@ -44,11 +55,30 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
   // Sync HTML data-attributes whenever device changes
   React.useEffect(() => {
     const html = document.documentElement
+    const applyViewportVars = () => {
+      const metrics = getViewportMetrics()
+      html.style.setProperty("--device-vw", `${metrics.width}px`)
+      html.style.setProperty("--device-vh", `${metrics.height}px`)
+      html.style.setProperty("--device-scale", String(metrics.scale))
+    }
+
     html.setAttribute("data-device", device)
     html.setAttribute("data-touch", isTouch ? "true" : "false")
+    html.setAttribute("data-density", isMobile ? "compact" : isTablet ? "comfortable" : "spacious")
     // Fluid font scale via CSS custom property
     html.style.setProperty("--app-font-scale", String(fontScale))
-  }, [device, isTouch, fontScale])
+    applyViewportVars()
+
+    window.addEventListener("resize", applyViewportVars)
+    window.addEventListener("orientationchange", applyViewportVars)
+    window.visualViewport?.addEventListener("resize", applyViewportVars)
+
+    return () => {
+      window.removeEventListener("resize", applyViewportVars)
+      window.removeEventListener("orientationchange", applyViewportVars)
+      window.visualViewport?.removeEventListener("resize", applyViewportVars)
+    }
+  }, [device, isTouch, fontScale, isMobile, isTablet])
 
   const value = React.useMemo<DeviceContextValue>(
     () => ({ device, isMobile, isTablet, isDesktop, isTouch, fontScale }),
