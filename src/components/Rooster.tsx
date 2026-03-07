@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react"
+import { useState, useMemo, useEffect, useCallback, type CSSProperties } from "react"
 import {
   ChevronLeft,
   ChevronRight,
@@ -515,6 +515,7 @@ export function Rooster({
 
   const selectedRoute = routeCards.find((r) => r.id === selectedRouteId)
   const addEventPreview = buildRouteTitleFromOption(selectedRoute)
+  const loadingLabel = "Loading Rooster"
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -523,7 +524,17 @@ export function Rooster({
       <div className="rooster-loading flex flex-1 items-center justify-center gap-2">
         <Loader2 className="size-5 animate-spin text-primary/90" />
         <span className="rooster-loading-text text-sm">
-          Loading roster
+          <span className="rooster-loading-track" aria-label={loadingLabel} role="status">
+            {loadingLabel.split("").map((char, index) => (
+              <span
+                key={`${char}-${index}`}
+                className="rooster-loading-letter"
+                style={{ ["--char-index" as "--char-index"]: index } as CSSProperties}
+              >
+                {char === " " ? "\u00A0" : char}
+              </span>
+            ))}
+          </span>
           <span className="ml-0.5 inline-flex" aria-hidden="true">
             <span className="rooster-loading-dot" style={{ animationDelay: "0s" }}>.</span>
             <span className="rooster-loading-dot" style={{ animationDelay: "0.2s" }}>.</span>
@@ -544,7 +555,10 @@ export function Rooster({
 
         {/* Center label */}
         <h2 className="text-base font-bold text-center">
-          {headerLabel}
+          <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/35 px-3 py-1">
+            <Clock className="size-3.5 text-primary/90" aria-hidden="true" />
+            <span>{headerLabel}</span>
+          </span>
         </h2>
 
         <div className="flex flex-wrap items-center gap-2 md:justify-end">

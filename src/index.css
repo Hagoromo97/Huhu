@@ -41,12 +41,12 @@
 @keyframes rooster-loading-glow {
   0%,
   100% {
-    color: hsl(var(--foreground) / 0.78);
+    color: hsl(var(--foreground) / 0.62);
     text-shadow: 0 0 0 transparent;
   }
-  50% {
+  35% {
     color: hsl(var(--primary));
-    text-shadow: 0 0 12px hsl(var(--primary) / 0.45);
+    text-shadow: 0 0 14px hsl(var(--primary) / 0.45);
   }
 }
 
@@ -68,9 +68,21 @@
 }
 
 .rooster-loading-text {
-  animation: rooster-loading-glow 1.8s ease-in-out infinite;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
   font-weight: 600;
   letter-spacing: 0.01em;
+}
+
+.rooster-loading-track {
+  display: inline-flex;
+}
+
+.rooster-loading-letter {
+  display: inline-block;
+  animation: rooster-loading-glow 1.45s ease-in-out infinite;
+  animation-delay: calc(var(--char-index) * 0.09s);
 }
 
 .rooster-loading-dot {
@@ -321,6 +333,7 @@ html[data-density="spacious"] {
   --content-pad-y: clamp(0.9rem, 1.9vh, 1.45rem);
 }
 
+
 body {
   height: 100%;
   background-color: hsl(var(--background));
@@ -338,6 +351,7 @@ body {
 #root {
   width: 100%;
   height: 100dvh;
+  min-height: var(--app-vh, 100dvh);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -988,6 +1002,15 @@ body {
     background-image: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.06), transparent);
   }
 
+  .app-main-shell {
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .pb-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.25rem);
+  }
+
   .app-surface {
     width: min(100%, var(--app-content-max));
     margin-inline: auto;
@@ -1085,6 +1108,20 @@ body {
     font-size: var(--fs-md);
   }
 
+  [data-platform="ios"] .app-main-shell,
+  [data-platform="android"] .app-main-shell {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  [data-compact="true"] .header-quick-action {
+    min-width: 2rem;
+  }
+
+  [data-compact="true"][data-orientation="portrait"] .quick-action-label {
+    display: inline;
+  }
+
+
   /* Touch-device: larger tap targets */
   [data-touch="true"] button,
   [data-touch="true"] [role="button"],
@@ -1105,6 +1142,7 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
     gap: clamp(0.55rem, 1.5vw, 1rem);
   }
+
 }
 
 /* ── PrimeReact InputSwitch — minimal standalone styles ─────── */
