@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { AlertTriangle, Calendar, Edit3, List, PackageOpen, Plus, Sparkles, Trash2, Undo2, X } from "lucide-react"
+import { AlertTriangle, Calendar, Edit3, List, PackageOpen, Plus, Trash2, Undo2, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -255,7 +255,7 @@ export function FoodTracker() {
   const todayISO = getLocalDateInputValue()
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col gap-5 overflow-y-auto p-3 sm:p-4 md:gap-6 md:p-6 animate-in fade-in-0 duration-500" style={{ paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}>
+    <div className="mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col gap-5 overflow-x-hidden overflow-y-auto p-3 sm:p-4 md:gap-6 md:p-6 animate-in fade-in-0 duration-500" style={{ paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}>
       <div className="pointer-events-none fixed right-4 top-4 z-50 max-w-[min(90vw,22rem)] space-y-2">
         {notices.map((n) => (
           <div
@@ -273,27 +273,26 @@ export function FoodTracker() {
         ))}
       </div>
 
+      <div className="mt-1 space-y-1 text-center">
+        <h1 className="text-lg font-semibold text-foreground md:text-2xl">Food Tracker</h1>
+        <p className="text-xs text-muted-foreground md:text-sm">Track expiry, reduce waste, and keep your kitchen fresh.</p>
+      </div>
+
+      <div className="mx-auto h-px w-full max-w-3xl bg-border/60" />
+
       <div className="glass-card relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-primary/10 via-card/95 to-emerald-500/10 p-4 sm:p-5 md:p-6 shadow-sm animate-in slide-in-from-top-2 duration-500">
         <div className="pointer-events-none absolute -right-10 -top-10 size-36 rounded-full bg-primary/15 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-12 -left-12 size-40 rounded-full bg-emerald-500/15 blur-3xl" />
 
-        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <div className="space-y-1">
-            <p className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary">
-              <Sparkles className="size-3" /> Pantry Intelligence
-            </p>
-            <h1 className="pt-0.5 text-lg font-semibold text-foreground md:text-2xl">Food Tracker</h1>
-            <p className="text-xs text-muted-foreground md:text-sm">Track expiry, reduce waste, and keep your kitchen fresh.</p>
-          </div>
-          <Button size="sm" onClick={openAdd} className="hidden gap-1.5 shadow-sm md:inline-flex">
-            <Plus className="size-3.5" /> Add Item
-          </Button>
-        </div>
-
-        <div className="relative mt-5">
+        <div className="relative">
           <div className="mb-2.5 flex items-center justify-between">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Mini Calendar</p>
-            <p className="text-xs font-medium text-foreground">{miniCalendar.label}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-medium text-foreground">{miniCalendar.label}</p>
+              <Button size="sm" onClick={openAdd} className="hidden h-8 gap-1.5 px-2.5 shadow-sm md:inline-flex">
+                <Plus className="size-3.5" /> Add Item
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-7 gap-1.5 text-center text-[9px] font-semibold uppercase text-muted-foreground sm:text-[10px]">

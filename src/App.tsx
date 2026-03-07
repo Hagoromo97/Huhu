@@ -11,7 +11,7 @@ const Album = lazy(() => import("@/components/Album").then(m => ({ default: m.Al
 const Rooster = lazy(() => import("@/components/Rooster").then(m => ({ default: m.Rooster })))
 const FoodTracker = lazy(() => import("@/components/FoodTracker").then(m => ({ default: m.FoodTracker })))
 import { EditModeProvider } from "@/contexts/EditModeContext"
-import { DeviceProvider } from "@/contexts/DeviceContext"
+import { DeviceProvider, useDevice } from "@/contexts/DeviceContext"
 import { Toaster } from "sonner"
 import { Home, Package, Settings2, Calendar as CalendarIcon, Images, ChevronDown, Truck, Pin, LayoutList, List, ClipboardList, Users, CalendarDays, Clock } from "lucide-react"
 import {
@@ -258,11 +258,12 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState("home")
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [roosterViewMode, setRoosterViewMode] = useState<"week" | "day">("week")
-  const { open, setOpen, openMobile, setOpenMobile, isMobile, toggleSidebar } = useSidebar()
+  const { open, setOpen, openMobile, setOpenMobile, isMobile: sidebarMobile, toggleSidebar } = useSidebar()
+  const { isCompact, orientation, isStandalonePwa } = useDevice()
 
   const handlePageChange = (page: string) => {
     // Always close sidebar after selecting a destination.
-    if (isMobile) setOpenMobile(false)
+    if (sidebarMobile) setOpenMobile(false)
     else setOpen(false)
 
     if (page === currentPage) return
@@ -380,15 +381,15 @@ function AppContent() {
       <AppSidebar onNavigate={handlePageChange} currentPage={currentPage} />
       
       {/* Backdrop for desktop sidebar */}
-      {!isMobile && open && (
+      {!sidebarMobile && open && (
         <div 
           className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-opacity duration-300"
           onClick={toggleSidebar}
         />
       )}
       
-      <main className={`relative flex w-full flex-1 flex-col min-h-0 overflow-hidden bg-background transition-all duration-500 ease-in-out ${(isMobile && openMobile) || (!isMobile && open) ? 'scale-95 opacity-90' : 'scale-100 opacity-100'}`} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <header className="glass-header sticky top-0 z-30 flex shrink-0 items-center gap-2 px-3 md:px-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] transition-colors duration-300" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)', paddingBottom: '0.625rem', minHeight: 'calc(3.5rem + max(env(safe-area-inset-top), 12px))' }}>
+      <main className={`app-main-shell relative flex w-full flex-1 flex-col min-h-0 overflow-hidden bg-background transition-all duration-500 ease-in-out ${(sidebarMobile && openMobile) || (!sidebarMobile && open) ? 'scale-95 opacity-90' : 'scale-100 opacity-100'}`} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <header className={`glass-header sticky top-0 z-30 flex shrink-0 items-center px-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.25)] transition-colors duration-300 md:px-4 ${isCompact ? "gap-1.5" : "gap-2"}`} style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)', paddingBottom: isCompact ? '0.5rem' : '0.625rem', minHeight: 'calc(3.5rem + max(env(safe-area-inset-top), 12px))' }}>
           <SidebarTrigger className="-ml-1 shrink-0" />
           <Separator orientation="vertical" className="mr-1 md:mr-2 h-4 shrink-0" />
           <Breadcrumb className="min-w-0 flex-1">
@@ -436,18 +437,18 @@ function AppContent() {
           {currentPage === "rooster" && (
             <button
               onClick={() => setRoosterViewMode((prev) => (prev === "week" ? "day" : "week"))}
-              className="flex items-center gap-1.5 shrink-0 h-8 px-3 rounded-lg border border-border bg-muted/40 hover:bg-muted/70 text-xs font-semibold text-foreground transition-all duration-150 shadow-sm"
+              className={`header-quick-action flex items-center gap-1.5 shrink-0 h-8 rounded-lg border border-border bg-muted/40 hover:bg-muted/70 text-xs font-semibold text-foreground transition-all duration-150 shadow-sm ${isCompact ? "px-2" : "px-3"}`}
               aria-label="Toggle rooster view mode"
             >
               {roosterViewMode === "week" ? (
                 <>
                   <CalendarDays className="size-3 shrink-0" />
-                  Week
+                  <span className="quick-action-label">Week</span>
                 </>
               ) : (
                 <>
                   <Clock className="size-3 shrink-0" />
-                  Day
+                  <span className="quick-action-label">Day</span>
                 </>
               )}
             </button>
@@ -468,18 +469,19 @@ function AppContent() {
             return (
               <button
                 onClick={() => handlePageChange(nextView)}
-                className="flex items-center gap-1.5 shrink-0 h-8 px-3 rounded-lg border border-border bg-muted/40 hover:bg-muted/70 text-xs font-semibold text-foreground transition-all duration-150 shadow-sm"
+                className={`header-quick-action flex items-center gap-1.5 shrink-0 h-8 rounded-lg border border-border bg-muted/40 hover:bg-muted/70 text-xs font-semibold text-foreground transition-all duration-150 shadow-sm ${isCompact ? "px-2" : "px-3"}`}
+                aria-label={`Switch calendar view. Current ${LABELS[active]}`}
               >
                 {active === "calendar-list" && <LayoutList className="size-3 shrink-0" />}
-                {LABELS[active]}
-                <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
+                <span className="quick-action-label">{LABELS[active]}</span>
+                <ChevronDown className={`size-3 shrink-0 text-muted-foreground ${isCompact && orientation === "portrait" ? "-ml-0.5" : ""}`} />
               </button>
             )
           })()}
 
         </header>
         <Suspense fallback={<div className="app-surface flex flex-1 items-center justify-center p-8 text-muted-foreground">Loading…</div>}>
-          <div className={`flex flex-col flex-1 min-h-0 ${isTransitioning ? "page-fade-out" : "page-fade-in animate-in slide-in-from-bottom-4"}`}>
+          <div className={`flex flex-col flex-1 min-h-0 ${isTransitioning ? "page-fade-out" : "page-fade-in animate-in slide-in-from-bottom-4"} ${isStandalonePwa ? "pb-safe" : ""}`}>
             {renderContent()}
           </div>
         </Suspense>

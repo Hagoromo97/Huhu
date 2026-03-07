@@ -1117,8 +1117,8 @@ export function RouteList() {
   }
 
   return (
-    <div className="route-command-center relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.14),_transparent_40%),linear-gradient(180deg,_hsl(var(--background)),_hsl(var(--muted)/0.35))]">
-      <div className="p-4 md:p-8 space-y-5" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+    <div className="route-command-center relative flex-1 min-h-0 overflow-x-hidden overflow-y-auto bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.14),_transparent_40%),linear-gradient(180deg,_hsl(var(--background)),_hsl(var(--muted)/0.35))]">
+      <div className="space-y-5 p-4 md:p-8" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
         <section className="rounded-3xl border border-border/60 bg-card/80 backdrop-blur-sm shadow-[0_18px_45px_-30px_hsl(var(--foreground)/0.6)] p-5 md:p-7 space-y-5">
           <div className="flex flex-col gap-2">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Route Command Center</h1>
