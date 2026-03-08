@@ -638,7 +638,7 @@ export function Rooster({
                             className={`flex items-center justify-center text-xs font-semibold border-r border-border/35 ${isToday ? "text-primary" : "text-muted-foreground"}`}
                             style={{ width: dayColWidth }}
                           >
-                            <span className="inline-flex items-center justify-center px-2 h-5 text-[10px] sm:px-2.5 sm:h-6 sm:text-[11px]">
+                            <span className="inline-flex items-center justify-center px-2 h-5 text-[12px] sm:px-2.5 sm:h-6 sm:text-[13px]">
                               {date.getDate()} - {DAYS_SHORT[date.getDay()]}
                             </span>
                           </div>
