@@ -45,8 +45,7 @@ export function DeliveryTableDialog() {
 
   // Search & Filter
   const [search, setSearch]           = useState("")
-  const [filterRoute, setFilterRoute] = useState("")
-  const [filterDelivery, setFilterDelivery] = useState("")
+  const [combinedFilter, setCombinedFilter] = useState("all")
 
   // Sort — default: code asc
   const [sortKey, setSortKey] = useState<SortKey>("code")
@@ -115,8 +114,14 @@ export function DeliveryTableDialog() {
         p.delivery.toLowerCase().includes(q)
       )
     }
-    if (filterRoute)    list = list.filter(p => p.routeId === filterRoute)
-    if (filterDelivery) list = list.filter(p => p.delivery === filterDelivery)
+    if (combinedFilter.startsWith("route:")) {
+      const routeId = combinedFilter.slice("route:".length)
+      list = list.filter(p => p.routeId === routeId)
+    }
+    if (combinedFilter.startsWith("delivery:")) {
+      const delivery = combinedFilter.slice("delivery:".length)
+      list = list.filter(p => p.delivery === delivery)
+    }
 
     return [...list].sort((a, b) => {
       let av = "", bv = ""
@@ -127,7 +132,7 @@ export function DeliveryTableDialog() {
       const cmp = av.localeCompare(bv, undefined, { numeric: true, sensitivity: "base" })
       return sortDir === "asc" ? cmp : -cmp
     })
-  }, [flat, search, filterRoute, filterDelivery, sortKey, sortDir])
+  }, [flat, search, combinedFilter, sortKey, sortDir])
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc")
@@ -186,27 +191,24 @@ export function DeliveryTableDialog() {
         <div className="flex items-center gap-1.5">
           <Filter className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
           <select
-            value={filterRoute}
-            onChange={e => setFilterRoute(e.target.value)}
+            value={combinedFilter}
+            onChange={e => setCombinedFilter(e.target.value)}
             className="h-8 rounded-lg border border-input bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           >
-            <option value="">All Routes</option>
-            {routeOptions.map(([id, label]) => (
-              <option key={id} value={id}>{label}</option>
-            ))}
+            <option value="all">All Routes & Delivery</option>
+            <optgroup label="Routes">
+              {routeOptions.map(([id, label]) => (
+                <option key={id} value={`route:${id}`}>{label}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Delivery Types">
+              {deliveryOptions.map(d => <option key={d} value={`delivery:${d}`}>{d}</option>)}
+            </optgroup>
           </select>
         </div>
-        <select
-          value={filterDelivery}
-          onChange={e => setFilterDelivery(e.target.value)}
-          className="h-8 rounded-lg border border-input bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-        >
-          <option value="">All Delivery</option>
-          {deliveryOptions.map(d => <option key={d} value={d}>{d}</option>)}
-        </select>
-        {(search || filterRoute || filterDelivery) && (
+        {(search || combinedFilter !== "all") && (
           <button
-            onClick={() => { setSearch(""); setFilterRoute(""); setFilterDelivery("") }}
+            onClick={() => { setSearch(""); setCombinedFilter("all") }}
             className="text-xs text-muted-foreground hover:text-foreground underline"
           >Clear</button>
         )}

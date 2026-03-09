@@ -223,8 +223,8 @@ html {
    * Fluid device-aware font-size:
    *   --text-size-base  → user's chosen size (set by useTheme, default 16px)
    *   --app-font-scale  → device multiplier  (set by DeviceProvider)
-  *      mobile  < 768px  → 0.86   (~86% of user pref)
-  *      tablet  768-1024 → 0.925  (~92.5%)
+  *      mobile  < 768px  → 1      (100% of user pref)
+  *      tablet  768-1024 → 0.95   (~95%)
   *      desktop > 1024px → 0.975  (~97.5%)
    *
    * clamp() ensures font never goes below 13px or above --text-size-base.
@@ -869,6 +869,27 @@ body {
 }
 .light .text-muted-foreground\/80 {
   color: color-mix(in oklab, var(--color-muted-foreground) 92%, var(--color-foreground)) !important;
+}
+
+/* Strengthen semi-transparent foreground text in light mode.
+ * This keeps decorative "faded" text readable on bright cards/gradients. */
+.light .text-foreground\/55 {
+  color: color-mix(in oklab, var(--color-foreground) 72%, var(--color-muted-foreground)) !important;
+}
+.light .text-foreground\/60 {
+  color: color-mix(in oklab, var(--color-foreground) 76%, var(--color-muted-foreground)) !important;
+}
+.light .text-foreground\/70 {
+  color: color-mix(in oklab, var(--color-foreground) 82%, var(--color-muted-foreground)) !important;
+}
+.light .text-foreground\/75 {
+  color: color-mix(in oklab, var(--color-foreground) 86%, var(--color-muted-foreground)) !important;
+}
+.light .text-foreground\/80 {
+  color: color-mix(in oklab, var(--color-foreground) 90%, var(--color-muted-foreground)) !important;
+}
+.light .text-foreground\/85 {
+  color: color-mix(in oklab, var(--color-foreground) 93%, var(--color-muted-foreground)) !important;
 }
 
 @layer base {
