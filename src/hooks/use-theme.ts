@@ -34,6 +34,7 @@ export const FONT_OPTIONS: { id: AppFont; label: string; family: string; googleI
 ]
 
 export type AppZoom = "80" | "85" | "90" | "95" | "100" | "105" | "110" | "115" | "120"
+const DEFAULT_APP_ZOOM: AppZoom = "110"
 export type TextSize = "13" | "14" | "15" | "16" | "17" | "18" | "20"
 
 /** Inject a Google Fonts <link> once per font id */
@@ -64,7 +65,7 @@ export function useTheme() {
   })
 
   const [appZoom, setAppZoom] = useState<AppZoom>(() => {
-    return (localStorage.getItem("app-zoom") as AppZoom | null) ?? "100"
+    return (localStorage.getItem("app-zoom") as AppZoom | null) ?? DEFAULT_APP_ZOOM
   })
 
   const [textSize, setTextSize] = useState<TextSize>(() => {

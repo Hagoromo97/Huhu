@@ -33,6 +33,8 @@ interface Shift {
   startHour: number  // decimal hour, supports .5 (e.g. 4, 12.5)
   endHour: number    // decimal hour, supports .5 and >24 for overnight (e.g. 24.5)
   color: string
+  bgColor: string | null
+  textColor: string | null
 }
 
 interface RouteCardOption {
@@ -135,6 +137,8 @@ async function apiFetchAll(): Promise<{ resources: Resource[]; shifts: Shift[] }
       startHour: Number(s.start_hour),
       endHour: Number(s.end_hour),
       color: String(s.color),
+      bgColor: typeof s.bg_color === "string" ? s.bg_color : null,
+      textColor: typeof s.text_color === "string" ? s.text_color : null,
     }))
     return { resources, shifts }
   } catch {
@@ -176,6 +180,8 @@ async function apiSaveShift(s: Shift): Promise<boolean> {
         start_hour: s.startHour,
         end_hour: s.endHour,
         color: s.color,
+        bg_color: s.bgColor,
+        text_color: s.textColor,
       }),
     })
     const json = await res.json()
@@ -216,8 +222,8 @@ function normalizeStyle(shift: string): "AM" | "PM" {
 
 function getStyleDefaults(style: "AM" | "PM") {
   return style === "PM"
-    ? { startHour: 16, endHour: 24.5, color: "#F97316" }
-    : { startHour: 4, endHour: 12.5, color: "#3B82F6" }
+    ? { startHour: 16, endHour: 24.5, color: "#F97316", bgColor: "#F97316", textColor: "#FFFFFF" }
+    : { startHour: 4, endHour: 12.5, color: "#3B82F6", bgColor: "#3B82F6", textColor: "#FFFFFF" }
 }
 
 function buildRouteEventTitle(routeName: string, style: "AM" | "PM") {
@@ -227,6 +233,13 @@ function buildRouteEventTitle(routeName: string, style: "AM" | "PM") {
 function buildRouteTitleFromOption(route?: RouteCardOption) {
   if (!route) return ""
   return buildRouteEventTitle(route.name, normalizeStyle(route.shift))
+}
+
+function inferStyleFromTitle(title: string): "AM" | "PM" | null {
+  const upper = title.trim().toUpperCase()
+  if (upper.endsWith("- AM") || upper === "AM") return "AM"
+  if (upper.endsWith("- PM") || upper === "PM") return "PM"
+  return null
 }
 
 // ─── SEED DATA ────────────────────────────────────────────────────────────────
@@ -262,6 +275,8 @@ function makeSeedShifts(resources: Resource[]): Shift[] {
         startHour: tmpl.startHour,
         endHour: tmpl.endHour,
         color: tmpl.color,
+        bgColor: tmpl.color,
+        textColor: "#FFFFFF",
       })
     })
   })
@@ -359,6 +374,8 @@ export function Rooster({
     startHour: 4,
     endHour: 12.5,
     color: "#3B82F6",
+    bgColor: "#3B82F6" as string | null,
+    textColor: "#FFFFFF" as string | null,
   })
 
   // Resource form state
@@ -427,6 +444,8 @@ export function Rooster({
       startHour: styleDefaults.startHour,
       endHour: styleDefaults.endHour,
       color: styleDefaults.color,
+      bgColor: styleDefaults.bgColor,
+      textColor: styleDefaults.textColor,
     })
     setSelectedRouteId(firstRoute?.id ?? "")
     setShiftDialog({ open: true, mode: "add" })
@@ -440,6 +459,8 @@ export function Rooster({
       startHour: shift.startHour,
       endHour: shift.endHour,
       color: shift.color,
+      bgColor: shift.bgColor,
+      textColor: shift.textColor,
     })
     setShiftDialog({ open: true, mode: "edit", shift })
   }
@@ -462,14 +483,29 @@ export function Rooster({
         startHour: defaults.startHour,
         endHour: defaults.endHour,
         color: defaults.color,
+        bgColor: shiftForm.bgColor,
+        textColor: shiftForm.textColor,
       }
       const ok = await apiSaveShift(newShift)
       if (ok) { setShifts(prev => [...prev, newShift]); toast.success("Shift added") }
       else toast.error("Failed to save shift")
     } else {
       if (!shiftForm.title.trim()) { toast.error("Please enter a shift title"); return }
-      if (shiftForm.endHour <= shiftForm.startHour) { toast.error("End time must be after start time"); return }
-      const updated: Shift = { ...shiftDialog.shift!, ...shiftForm, title: shiftForm.title.trim() }
+      const title = shiftForm.title.trim()
+      const inferredStyle = inferStyleFromTitle(title)
+      const preset = inferredStyle ? getStyleDefaults(inferredStyle) : null
+      const nextStartHour = preset ? preset.startHour : shiftForm.startHour
+      const nextEndHour = preset ? preset.endHour : shiftForm.endHour
+
+      if (nextEndHour <= nextStartHour) { toast.error("End time must be after start time"); return }
+
+      const updated: Shift = {
+        ...shiftDialog.shift!,
+        ...shiftForm,
+        title,
+        startHour: nextStartHour,
+        endHour: nextEndHour,
+      }
       const ok = await apiSaveShift(updated)
       if (ok) {
         setShifts(prev => prev.map(s => s.id === updated.id ? updated : s))
@@ -738,6 +774,11 @@ export function Rooster({
                                     key={shift.id}
                                     onClick={(e) => { e.stopPropagation(); if (isEditMode) openEditShift(shift) }}
                                     className={`w-full px-0 py-0.5 text-center text-[10px] leading-tight text-foreground ${isEditMode ? "hover:underline underline-offset-2" : "cursor-default"}`}
+                                    style={{
+                                      backgroundColor: shift.bgColor ?? undefined,
+                                      color: shift.textColor ?? undefined,
+                                      borderRadius: shift.bgColor ? 8 : 0,
+                                    }}
                                     title={`${shift.title}: ${formatHour(shift.startHour)} - ${formatHour(shift.endHour)}`}
                                   >
                                     <div className="font-semibold truncate">{shift.title}</div>
@@ -774,6 +815,9 @@ export function Rooster({
                               style={{
                                 left,
                                 width,
+                                backgroundColor: shift.bgColor ?? undefined,
+                                color: shift.textColor ?? undefined,
+                                borderRadius: shift.bgColor ? 8 : 0,
                               }}
                               onClick={(e) => { e.stopPropagation(); if (isEditMode) openEditShift(shift) }}
                               title={`${shift.title}: ${formatHour(shift.startHour)} - ${formatHour(shift.endHour)}`}
@@ -847,6 +891,8 @@ export function Rooster({
                         startHour: defaults.startHour,
                         endHour: defaults.endHour,
                         color: defaults.color,
+                        bgColor: defaults.bgColor,
+                        textColor: defaults.textColor,
                       }))
                     }}
                     className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -861,6 +907,47 @@ export function Rooster({
                 <div className="rounded-md border border-border/60 px-3 py-2">
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Preview</p>
                   <p className="text-sm font-semibold text-foreground mt-1">{addEventPreview || "Select route first"}</p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Background Color</label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant={shiftForm.bgColor ? "outline" : "default"}
+                        size="sm"
+                        onClick={() => setShiftForm(p => ({ ...p, bgColor: null }))}
+                      >
+                        None
+                      </Button>
+                      <Input
+                        type="color"
+                        value={shiftForm.bgColor ?? "#3B82F6"}
+                        onChange={e => setShiftForm(p => ({ ...p, bgColor: e.target.value }))}
+                        className="h-9 w-16 cursor-pointer p-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Font Color</label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant={shiftForm.textColor ? "outline" : "default"}
+                        size="sm"
+                        onClick={() => setShiftForm(p => ({ ...p, textColor: null }))}
+                      >
+                        None
+                      </Button>
+                      <Input
+                        type="color"
+                        value={shiftForm.textColor ?? "#FFFFFF"}
+                        onChange={e => setShiftForm(p => ({ ...p, textColor: e.target.value }))}
+                        className="h-9 w-16 cursor-pointer p-1"
+                      />
+                    </div>
+                  </div>
                 </div>
               </>
             ) : (
@@ -924,6 +1011,47 @@ export function Rooster({
                         )}
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Background Color</label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant={shiftForm.bgColor ? "outline" : "default"}
+                        size="sm"
+                        onClick={() => setShiftForm(p => ({ ...p, bgColor: null }))}
+                      >
+                        None
+                      </Button>
+                      <Input
+                        type="color"
+                        value={shiftForm.bgColor ?? "#3B82F6"}
+                        onChange={e => setShiftForm(p => ({ ...p, bgColor: e.target.value }))}
+                        className="h-9 w-16 cursor-pointer p-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Font Color</label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant={shiftForm.textColor ? "outline" : "default"}
+                        size="sm"
+                        onClick={() => setShiftForm(p => ({ ...p, textColor: null }))}
+                      >
+                        None
+                      </Button>
+                      <Input
+                        type="color"
+                        value={shiftForm.textColor ?? "#FFFFFF"}
+                        onChange={e => setShiftForm(p => ({ ...p, textColor: e.target.value }))}
+                        className="h-9 w-16 cursor-pointer p-1"
+                      />
+                    </div>
                   </div>
                 </div>
               </>

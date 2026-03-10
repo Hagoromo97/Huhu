@@ -28,6 +28,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         start_hour  NUMERIC(4,1) NOT NULL DEFAULT 8,
         end_hour    NUMERIC(4,1) NOT NULL DEFAULT 16,
         color       VARCHAR(20) NOT NULL DEFAULT '#3B82F6',
+        bg_color    VARCHAR(20),
+        text_color  VARCHAR(20),
         created_at  TIMESTAMP DEFAULT NOW()
       )
     `;
@@ -39,6 +41,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ALTER COLUMN end_hour TYPE NUMERIC(4,1) USING end_hour::numeric
     `;
 
+    await sql`
+      ALTER TABLE rooster_shifts
+      ADD COLUMN IF NOT EXISTS bg_color VARCHAR(20),
+      ADD COLUMN IF NOT EXISTS text_color VARCHAR(20)
+    `;
+
     // ── GET — return resources + shifts ─────────────────────────────────────
     if (req.method === 'GET') {
       const resources = await sql`
@@ -48,7 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `;
 
       const shifts = await sql`
-        SELECT id, resource_id, title, shift_date, start_hour, end_hour, color
+        SELECT id, resource_id, title, shift_date, start_hour, end_hour, color, bg_color, text_color
         FROM rooster_shifts
         ORDER BY shift_date ASC, start_hour ASC
       `;
@@ -76,21 +84,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       if (type === 'shift') {
-        const { id, resource_id, title, shift_date, start_hour, end_hour, color } = req.body;
+        const { id, resource_id, title, shift_date, start_hour, end_hour, color, bg_color, text_color } = req.body;
         if (!id || !resource_id || !title || !shift_date) {
           return res.status(400).json({ success: false, error: 'id, resource_id, title, shift_date required' });
         }
 
         await sql`
-          INSERT INTO rooster_shifts (id, resource_id, title, shift_date, start_hour, end_hour, color)
-          VALUES (${id}, ${resource_id}, ${title}, ${shift_date}, ${start_hour ?? 4}, ${end_hour ?? 12.5}, ${color ?? '#3B82F6'})
+          INSERT INTO rooster_shifts (id, resource_id, title, shift_date, start_hour, end_hour, color, bg_color, text_color)
+          VALUES (${id}, ${resource_id}, ${title}, ${shift_date}, ${start_hour ?? 4}, ${end_hour ?? 12.5}, ${color ?? '#3B82F6'}, ${bg_color ?? null}, ${text_color ?? null})
           ON CONFLICT (id) DO UPDATE
             SET resource_id = EXCLUDED.resource_id,
                 title       = EXCLUDED.title,
                 shift_date  = EXCLUDED.shift_date,
                 start_hour  = EXCLUDED.start_hour,
                 end_hour    = EXCLUDED.end_hour,
-                color       = EXCLUDED.color
+                color       = EXCLUDED.color,
+                bg_color    = EXCLUDED.bg_color,
+                text_color  = EXCLUDED.text_color
         `;
         return res.status(200).json({ success: true });
       }

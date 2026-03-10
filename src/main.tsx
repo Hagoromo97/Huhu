@@ -14,7 +14,7 @@ import { FONT_OPTIONS } from "./hooks/use-theme"
   try {
     // App zoom
     const zoom = localStorage.getItem("app-zoom")
-    if (zoom) document.documentElement.style.zoom = `${zoom}%`
+    document.documentElement.style.zoom = `${zoom ?? "110"}%`
 
     // Text size (rem base)
     const textSize = localStorage.getItem("text-size")
