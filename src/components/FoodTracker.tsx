@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { AlertTriangle, Calendar, Edit3, List, PackageOpen, Plus, Sparkles, Trash2, Undo2, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -103,8 +103,9 @@ function dayKey(year: number, month: number, day: number) {
 }
 
 export function FoodTracker() {
-  const [items, setItems] = useState<FoodItem[]>(() => readList(STORAGE_ACTIVE))
-  const [trash, setTrash] = useState<FoodItem[]>(() => readList(STORAGE_TRASH))
+  const [items, setItems] = useState<FoodItem[]>([])
+  const [trash, setTrash] = useState<FoodItem[]>([])
+  const [hydrated, setHydrated] = useState(false)
   const [activeTab, setActiveTab] = useState<"active" | "trash">("active")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<FoodItem | null>(null)
@@ -116,12 +117,78 @@ export function FoodTracker() {
     notes: "",
   })
 
-  const persist = (nextItems: FoodItem[], nextTrash = trash) => {
+  const persist = useCallback(async (nextItems: FoodItem[], nextTrash: FoodItem[]) => {
     setItems(nextItems)
     setTrash(nextTrash)
     localStorage.setItem(STORAGE_ACTIVE, JSON.stringify(nextItems))
     localStorage.setItem(STORAGE_TRASH, JSON.stringify(nextTrash))
-  }
+
+    try {
+      const res = await fetch("/api/food-tracker", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: nextItems, trash: nextTrash }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.success !== true) {
+        throw new Error(data.error ?? "Sync failed")
+      }
+    } catch {
+      // Keep local changes intact even when DB sync fails.
+      toast.error("Sync failed", {
+        description: "Data saved locally. Database will update when connection is back.",
+      })
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const load = async () => {
+      const localActive = readList(STORAGE_ACTIVE)
+      const localTrash = readList(STORAGE_TRASH)
+
+      try {
+        const res = await fetch("/api/food-tracker")
+        const data = await res.json()
+        if (!res.ok || data.success !== true) throw new Error(data.error ?? "Load failed")
+
+        const serverActive: FoodItem[] = Array.isArray(data.active) ? data.active : []
+        const serverTrash: FoodItem[] = Array.isArray(data.trash) ? data.trash : []
+
+        const shouldMigrate = serverActive.length === 0 && serverTrash.length === 0 && (localActive.length > 0 || localTrash.length > 0)
+
+        if (shouldMigrate) {
+          await fetch("/api/food-tracker", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ active: localActive, trash: localTrash }),
+          })
+          if (!cancelled) {
+            setItems(localActive)
+            setTrash(localTrash)
+          }
+        } else if (!cancelled) {
+          setItems(serverActive)
+          setTrash(serverTrash)
+          localStorage.setItem(STORAGE_ACTIVE, JSON.stringify(serverActive))
+          localStorage.setItem(STORAGE_TRASH, JSON.stringify(serverTrash))
+        }
+      } catch {
+        if (!cancelled) {
+          setItems(localActive)
+          setTrash(localTrash)
+        }
+      } finally {
+        if (!cancelled) setHydrated(true)
+      }
+    }
+
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const pushNotice = (message: string, type: TrackerNotice["type"]) => {
     const id = `n_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
@@ -201,7 +268,7 @@ export function FoodTracker() {
 
     if (editing) {
       const next = items.map((i) => i.id === editing.id ? { ...editing, ...form } : i)
-      persist(next)
+      void persist(next, trash)
       pushNotice("Item updated successfully", "success")
     } else {
       const next: FoodItem[] = [
@@ -215,7 +282,7 @@ export function FoodTracker() {
           createdAt: new Date().toISOString(),
         },
       ]
-      persist(next)
+      void persist(next, trash)
       pushNotice("Item added successfully", "success")
     }
 
@@ -227,7 +294,7 @@ export function FoodTracker() {
     if (!target) return
     const nextItems = items.filter((i) => i.id !== id)
     const nextTrash = [{ ...target, deletedAt: new Date().toISOString() }, ...trash]
-    persist(nextItems, nextTrash)
+    void persist(nextItems, nextTrash)
     pushNotice("Item moved to trash", "info")
   }
 
@@ -236,18 +303,18 @@ export function FoodTracker() {
     if (!target) return
     const nextTrash = trash.filter((i) => i.id !== id)
     const nextItems = [{ ...target, deletedAt: undefined }, ...items]
-    persist(nextItems, nextTrash)
+    void persist(nextItems, nextTrash)
     pushNotice("Item restored", "success")
   }
 
   const permanentDelete = (id: string) => {
     const nextTrash = trash.filter((i) => i.id !== id)
-    persist(items, nextTrash)
+    void persist(items, nextTrash)
     pushNotice("Item deleted permanently", "warning")
   }
 
   const clearTrash = () => {
-    persist(items, [])
+    void persist(items, [])
     pushNotice("Trash cleared", "warning")
   }
 
@@ -272,6 +339,12 @@ export function FoodTracker() {
           </div>
         ))}
       </div>
+
+      {!hydrated && (
+        <div className="rounded-xl border border-border/70 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+          Syncing Food Tracker data...
+        </div>
+      )}
 
       <div className="glass-card relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-primary/10 via-card/95 to-emerald-500/10 p-4 sm:p-5 md:p-6 shadow-sm animate-in slide-in-from-top-2 duration-500">
         <div className="pointer-events-none absolute -right-10 -top-10 size-36 rounded-full bg-primary/15 blur-3xl" />

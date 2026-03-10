@@ -81,7 +81,9 @@ export function NavProjects({
                 className="transition-colors duration-150"
                 onClick={() => { if (!isSearching) onSettingsOpenChange(!settingsOpen) }}
               >
-                <Settings2 />
+                <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md ring-1 bg-amber-500/15 text-amber-600 ring-amber-500/25 transition-colors">
+                  <Settings2 className="size-3.5" />
+                </span>
                 <span>Settings</span>
               </SidebarMenuButton>
               <CollapsibleTrigger asChild>

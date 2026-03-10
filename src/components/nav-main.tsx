@@ -18,6 +18,14 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
+function getMainIconTone(title: string): string {
+  const key = title.toLowerCase()
+  if (key.includes("full calendar")) return "bg-blue-500/15 text-blue-600 ring-blue-500/25"
+  if (key.includes("vending")) return "bg-emerald-500/15 text-emerald-600 ring-emerald-500/25"
+  if (key.includes("gallery")) return "bg-rose-500/15 text-rose-600 ring-rose-500/25"
+  return "bg-primary/15 text-primary ring-primary/25"
+}
+
 export function NavMain({
   items,
   onItemClick,
@@ -98,7 +106,9 @@ export function NavMain({
                       handleToggle(item.title, hasChildren, item.page)
                     }}
                   >
-                    <item.icon />
+                    <span className={`inline-flex size-6 shrink-0 items-center justify-center rounded-md ring-1 transition-colors ${getMainIconTone(item.title)}`}>
+                      <item.icon className="size-3.5" />
+                    </span>
                     <span>{item.title}</span>
                   </a>
                 </SidebarMenuButton>

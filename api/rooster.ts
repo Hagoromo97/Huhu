@@ -25,11 +25,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         resource_id TEXT NOT NULL REFERENCES rooster_resources(id) ON DELETE CASCADE,
         title       VARCHAR(200) NOT NULL,
         shift_date  DATE NOT NULL,
-        start_hour  INTEGER NOT NULL DEFAULT 8,
-        end_hour    INTEGER NOT NULL DEFAULT 16,
+        start_hour  NUMERIC(4,1) NOT NULL DEFAULT 8,
+        end_hour    NUMERIC(4,1) NOT NULL DEFAULT 16,
         color       VARCHAR(20) NOT NULL DEFAULT '#3B82F6',
         created_at  TIMESTAMP DEFAULT NOW()
       )
+    `;
+
+    // Support half-hour shifts (e.g. 12:30) for existing databases created with INTEGER columns.
+    await sql`
+      ALTER TABLE rooster_shifts
+      ALTER COLUMN start_hour TYPE NUMERIC(4,1) USING start_hour::numeric,
+      ALTER COLUMN end_hour TYPE NUMERIC(4,1) USING end_hour::numeric
     `;
 
     // ── GET — return resources + shifts ─────────────────────────────────────
@@ -76,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         await sql`
           INSERT INTO rooster_shifts (id, resource_id, title, shift_date, start_hour, end_hour, color)
-          VALUES (${id}, ${resource_id}, ${title}, ${shift_date}, ${start_hour ?? 8}, ${end_hour ?? 16}, ${color ?? '#3B82F6'})
+          VALUES (${id}, ${resource_id}, ${title}, ${shift_date}, ${start_hour ?? 4}, ${end_hour ?? 12.5}, ${color ?? '#3B82F6'})
           ON CONFLICT (id) DO UPDATE
             SET resource_id = EXCLUDED.resource_id,
                 title       = EXCLUDED.title,

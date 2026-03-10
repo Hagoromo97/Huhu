@@ -11,17 +11,41 @@ function getDeviceType(width: number): DeviceType {
   return "desktop"
 }
 
+function getViewportWidth(): number {
+  if (typeof window === "undefined") return TABLET_BREAKPOINT
+  const vv = window.visualViewport?.width
+  return typeof vv === "number" && Number.isFinite(vv) ? vv : window.innerWidth
+}
+
+function isTouchDevice(): boolean {
+  if (typeof window === "undefined") return false
+  return "ontouchstart" in window || navigator.maxTouchPoints > 0
+}
+
+function shouldUseMobileLayout(width: number): boolean {
+  // iPad/tablet touch devices get the mobile/sidebar sheet layout up to 1024px
+  if (isTouchDevice() && width < TABLET_BREAKPOINT) return true
+  return width < MOBILE_BREAKPOINT
+}
+
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
 
   React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
     const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+      setIsMobile(shouldUseMobileLayout(getViewportWidth()))
     }
-    mql.addEventListener("change", onChange)
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    return () => mql.removeEventListener("change", onChange)
+
+    window.addEventListener("resize", onChange)
+    window.visualViewport?.addEventListener("resize", onChange)
+    window.addEventListener("orientationchange", onChange)
+    onChange()
+
+    return () => {
+      window.removeEventListener("resize", onChange)
+      window.visualViewport?.removeEventListener("resize", onChange)
+      window.removeEventListener("orientationchange", onChange)
+    }
   }, [])
 
   return !!isMobile
@@ -29,14 +53,20 @@ export function useIsMobile() {
 
 export function useDeviceType(): DeviceType {
   const [device, setDevice] = React.useState<DeviceType>(() =>
-    typeof window !== "undefined" ? getDeviceType(window.innerWidth) : "desktop"
+    typeof window !== "undefined" ? getDeviceType(getViewportWidth()) : "desktop"
   )
 
   React.useEffect(() => {
-    const update = () => setDevice(getDeviceType(window.innerWidth))
+    const update = () => setDevice(getDeviceType(getViewportWidth()))
     window.addEventListener("resize", update)
+    window.visualViewport?.addEventListener("resize", update)
+    window.addEventListener("orientationchange", update)
     update()
-    return () => window.removeEventListener("resize", update)
+    return () => {
+      window.removeEventListener("resize", update)
+      window.visualViewport?.removeEventListener("resize", update)
+      window.removeEventListener("orientationchange", update)
+    }
   }, [])
 
   return device

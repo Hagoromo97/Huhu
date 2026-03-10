@@ -185,7 +185,7 @@ export function AppSidebar({
                   <Calendar className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">FCalendar</span>
+                  <span className="truncate font-medium">Data Brutals</span>
                   <span className="truncate text-xs">Your Schedule</span>
                 </div>
               </a>

@@ -30,8 +30,8 @@ interface Shift {
   resourceId: string
   title: string
   date: string   // "YYYY-MM-DD"
-  startHour: number  // 0-23
-  endHour: number    // 1-24
+  startHour: number  // decimal hour, supports .5 (e.g. 4, 12.5)
+  endHour: number    // decimal hour, supports .5 and >24 for overnight (e.g. 24.5)
   color: string
 }
 
@@ -54,6 +54,14 @@ const HOUR_LABELS = Array.from({ length: 24 }, (_, i) => {
   if (i < 12) return `${i} AM`
   if (i === 12) return "12 PM"
   return `${i - 12} PM`
+})
+
+const TIME_OPTIONS = Array.from({ length: 50 }, (_, i) => {
+  const value = i * 0.5
+  return {
+    value,
+    label: formatHour(value),
+  }
 })
 
 const RESOURCE_COLORS = [
@@ -100,10 +108,13 @@ function toDateKey(d: Date) {
 }
 
 function formatHour(h: number) {
-  if (h === 0) return "12:00 AM"
-  if (h < 12) return `${h}:00 AM`
-  if (h === 12) return "12:00 PM"
-  return `${h - 12}:00 PM`
+  const normalized = ((h % 24) + 24) % 24
+  const whole = Math.floor(normalized)
+  const minutes = Math.round((normalized - whole) * 60)
+  const isPm = whole >= 12
+  const hour12 = whole % 12 === 0 ? 12 : whole % 12
+  const minuteStr = String(minutes).padStart(2, "0")
+  return `${hour12}:${minuteStr} ${isPm ? "PM" : "AM"}`
 }
 
 // ─── API HELPERS ──────────────────────────────────────────────────────────────
@@ -205,8 +216,8 @@ function normalizeStyle(shift: string): "AM" | "PM" {
 
 function getStyleDefaults(style: "AM" | "PM") {
   return style === "PM"
-    ? { startHour: 12, endHour: 20, color: "#F97316" }
-    : { startHour: 8, endHour: 16, color: "#3B82F6" }
+    ? { startHour: 16, endHour: 24.5, color: "#F97316" }
+    : { startHour: 4, endHour: 12.5, color: "#3B82F6" }
 }
 
 function buildRouteEventTitle(routeName: string, style: "AM" | "PM") {
@@ -345,8 +356,8 @@ export function Rooster({
     title: "Morning",
     resourceId: resources[0]?.id ?? "",
     date: toDateKey(today),
-    startHour: 8,
-    endHour: 16,
+    startHour: 4,
+    endHour: 12.5,
     color: "#3B82F6",
   })
 
@@ -394,7 +405,7 @@ export function Rooster({
 
   const hourWidth = 44
   const dayColWidth = 140
-  const timelineHours = 24
+  const timelineHours = 25
   const dayTimelineWidth = timelineHours * hourWidth
   const weekTableWidth = colDates.length * dayColWidth
   const gridRightWidth = viewMode === "week" ? weekTableWidth : dayTimelineWidth
@@ -731,7 +742,7 @@ export function Rooster({
                                   >
                                     <div className="font-semibold truncate">{shift.title}</div>
                                     {isEditMode && (
-                                      <div className="opacity-70 truncate">{shift.startHour}:00 - {shift.endHour}:00</div>
+                                      <div className="opacity-70 truncate">{formatHour(shift.startHour)} - {formatHour(shift.endHour)}</div>
                                     )}
                                   </button>
                                 ))
@@ -769,7 +780,7 @@ export function Rooster({
                             >
                               <span className="truncate text-center">{shift.title}</span>
                               {isEditMode && (
-                                <span className="text-[10px] font-medium opacity-70 truncate">{shift.startHour}:00 - {shift.endHour}:00</span>
+                                <span className="text-[10px] font-medium opacity-70 truncate">{formatHour(shift.startHour)} - {formatHour(shift.endHour)}</span>
                               )}
                             </div>
                           )
@@ -873,8 +884,8 @@ export function Rooster({
                       onChange={e => setShiftForm(p => ({ ...p, startHour: Number(e.target.value) }))}
                       className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                     >
-                      {HOUR_LABELS.map((lbl, i) => (
-                        <option key={i} value={i}>{lbl}</option>
+                      {TIME_OPTIONS.map((opt) => (
+                        <option key={`start-${opt.value}`} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
                   </div>
@@ -885,8 +896,8 @@ export function Rooster({
                       onChange={e => setShiftForm(p => ({ ...p, endHour: Number(e.target.value) }))}
                       className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                     >
-                      {HOUR_LABELS.map((lbl, i) => (
-                        <option key={i + 1} value={i + 1}>{lbl}</option>
+                      {TIME_OPTIONS.filter((opt) => opt.value >= 0.5).map((opt) => (
+                        <option key={`end-${opt.value}`} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
                   </div>
